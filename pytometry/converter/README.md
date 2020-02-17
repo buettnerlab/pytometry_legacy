@@ -1,0 +1,1 @@
+This converter only works with anndata 0.6.22!
