@@ -678,16 +678,19 @@ class FCGateManager(EventGenerator):
             choices = ['top right', 'bottom right', 'bottom left', 'top left']
         frame = wx.Frame()
         dlg = wx.Dialog(frame)
+        textlabel = wx.StaticText(dlg, label="Choose region")
         comboBox1 = wx.ComboBox(dlg, choices=choices, value=choices[0])
         okBtn = wx.Button(dlg, wx.ID_OK)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(textlabel, 0, wx.ALL | wx.CENTER, 5)
         sizer.Add(comboBox1, 0, wx.ALL | wx.CENTER, 5)
         sizer.Add(okBtn, 0, wx.ALL | wx.CENTER, 5)
         dlg.SetSizer(sizer)
 
         if dlg.ShowModal() == wx.ID_OK:
-            # do something here
+            if comboBox1.GetCurrentSelection() < 0:
+                return choices[0]
             return comboBox1.GetString(comboBox1.GetCurrentSelection())
         else:
             dlg.Destroy()
