@@ -4,7 +4,7 @@ from pathlib import Path
 import anndata as anndata
 import numpy as np
 import pandas as pd
-import FlowCytometryTools as fct
+import pytometry.tools.FlowCytometryTools as fct
 from pytometry.converter import fcswriter
 
 
