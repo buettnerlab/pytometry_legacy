@@ -61,7 +61,7 @@ def time_avg_test(n, subsamplepercentage):
 ### GRAPHS ###
 
 adata = anndata.read_h5ad(filelocation)
-sc.pp.subsample(adata, 0.2)
+sc.pp.subsample(adata, 0.1)
 imp_channels = [1,3,5,7,9,13]
 hsne = HSNE(adata, imp_channels=imp_channels)
 hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
@@ -92,11 +92,11 @@ p =hsne.calc_P(scales[1].T[subset_ind][:, subset_ind], scales[1].X[subset_ind])
 # p = p.multiply(csr_matrix(1.0 / np.abs(p).sum(1)))
 
 tsne = tSNE()
-X_tsne = tsne.fit_transform(scales[1].X[subset_ind], p)
+X_hsne = tsne.fit_transform(scales[1].X[subset_ind], p)
 
-plt.scatter(X_tsne[:,0],X_tsne[:,1])
+plt.scatter(X_hsne[:,0],X_hsne[:,1])
 plt.show()
 
-print([np.shape(s.X_tsne) for s in scales])
+print([np.shape(s.X_hsne) for s in scales])
 
 print('Done')
