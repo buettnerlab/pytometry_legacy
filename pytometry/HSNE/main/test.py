@@ -1,4 +1,4 @@
-from main.hsne_prog import HSNE, tSNE
+from pytometry.HSNE.main.hsne_prog import HSNE, tSNE
 import anndata
 import scanpy as sc
 import matplotlib.pyplot as plt
@@ -6,15 +6,18 @@ import time as time
 import numpy as np
 from scipy.sparse import csr_matrix
 
-filelocation = r"/home/felix/Public/VBh_converted.h5ad"
-adata = anndata.read_h5ad(filelocation)
-sc.pp.subsample(adata, 0.2)
-imp_channels = [1,3,5,7,9,13]
-hsne = HSNE(adata, imp_channels=imp_channels)
-hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
+
+# Important! Change this link to the location of a h5ad file
+# Example:   r"/home/username/Public/myAnndataFile.h5ad"
+filelocation =  r"/home/foelix/Öffentlich/VBh_converted.h5ad"  # TODO link verallgemeinern für den Test
 
 
+### TIMETEST ###
 def timetest(subsamplepercentage=None):
+    '''
+    Processes the same dataset with descending subsampling
+    :param subsamplepercentage --> list of subsamplepercentages
+    '''
     print('TIMETEST')
     if subsamplepercentage is None:
         subsamplepercentage = [p for p in np.array(range(1,8,1))/100]
@@ -33,23 +36,35 @@ def timetest(subsamplepercentage=None):
     plt.show()
 #timetest()
 
-def time_avg_test(n, subsample):
+def time_avg_test(n, subsamplepercentage):
+    '''
+    Processes the loaded dataset n times and shows average time
+    :param n: number of iterations
+    :param subsamplepercentage: percentage of subsampling
+    '''
     print('TIME AVG TEST')
     timearr = list()
     for i in range(n):
         print('--- %s ---' % i)
         adata = anndata.read_h5ad(filelocation)
-        sc.pp.subsample(adata, subsample)
+        sc.pp.subsample(adata, subsamplepercentage)
         hsne = HSNE(adata, imp_channels=imp_channels)
         hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
         p0 = time.time()
         hsne.fit(scale=3)
         p1 = time.time()
         timearr.append(p1 - p0)
-    print("RESULT AVG TEST: \nSubsample: %s\nAvg time: %s\nEach run:%s"%(subsample,np.mean(timearr),timearr))
-
+    print("RESULT AVG TEST: \nSubsample: %s\nAvg time: %s\nEach run:%s"%(subsamplepercentage,np.mean(timearr),timearr))
 #time_avg_test(3, 0.08)
 
+
+### GRAPHS ###
+
+adata = anndata.read_h5ad(filelocation)
+sc.pp.subsample(adata, 0.2)
+imp_channels = [1,3,5,7,9,13]
+hsne = HSNE(adata, imp_channels=imp_channels)
+hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
 
 print('Test started...')
 p0 = time.time()
@@ -83,6 +98,5 @@ plt.scatter(X_tsne[:,0],X_tsne[:,1])
 plt.show()
 
 print([np.shape(s.X_tsne) for s in scales])
-
 
 print('Done')
