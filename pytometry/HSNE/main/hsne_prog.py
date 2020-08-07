@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.manifold import _utils
 from sklearn.manifold._t_sne import _joint_probabilities
 from sklearn.neighbors._unsupervised import NearestNeighbors
-from scipy.sparse import csr_matrix, bsr_matrix, lil_matrix
+from scipy.sparse import csr_matrix, bsr_matrix, lil_matrix, vstack, hstack
 from scipy.special import softmax
 from sklearn.manifold import TSNE
 from scipy.stats import entropy
@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import time as time
 import platform
 import multiprocessing as mp
-from pytometry.HSNE.Other.LassoScatterSelector import SelectFromCollection
+from ..Other.LassoScatterSelector import SelectFromCollection
+
 
 OS = platform.system()
 # OS = 'Windows'
@@ -394,7 +395,7 @@ class HSNE:
           Weight-Vector W with the weights if the landmarks from scale s with
           length (n_landmarks_s)
         '''
-        if W_old is None or W_old == 1:
+        if W_old is None or W_old is 1:
             W_old = np.ones((np.shape(I)[0],))
         # W_s = np.array(np.sum((W_old * I.transpose()).transpose(), axis=0))  # W_old * I
         # W_s = W_s.flatten()
@@ -553,17 +554,15 @@ class HSNE:
             p = mp.Pool(mp.cpu_count())
             I_with_W = p.map(_helper_method_T_next_mul_W, [it for it in I_t])
 
-            # I_with_W = np.reshape(I_with_W, (num_lm_s_prev, num_lm_s)) # FIXME Fehler
-            I_with_W = np.reshape(I_with_W, (num_lm_s, num_lm_s_prev)).T
+            I_with_W = hstack(I_with_W)
 
             I = I_with_W.T * I
-            T_next = lil_matrix(np.zeros((num_lm_s, num_lm_s)))
 
             T_next = p.map(_helper_method_T_next_row_div, enumerate(I))
             p.terminate()
             p.join()
 
-            T_next = csr_matrix(np.reshape(T_next, (num_lm_s, num_lm_s)))
+            T_next = vstack(T_next)
             print(len(T_next.data) / (np.shape(T_next)[0] ** 2))
 
         else:
@@ -598,7 +597,6 @@ class HSNE:
         return P
 
 
-# TODO compare
 def _helper_method_get_landmarks(state):
     for i in range(HELPER_VAR['teta']):
         state *= HELPER_VAR['T']
@@ -716,7 +714,7 @@ def _helper_method_T_next_mul_W(i):
     # load globals
     W = HELPER_VAR['W']
     num_lm_s_prev = HELPER_VAR['num_lm_s_prev']
-    return np.reshape(i.toarray().reshape((num_lm_s_prev,)) * W, (num_lm_s_prev, 1))
+    return csr_matrix(np.reshape(i.toarray().reshape((num_lm_s_prev,)) * W, (num_lm_s_prev, 1)))
 
 
 def _helper_method_T_next_row_div(r):
