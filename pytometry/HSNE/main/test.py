@@ -1,11 +1,10 @@
-from pytometry.HSNE.main.hsne_prog import HSNE, tSNE
 import anndata
 import scanpy as sc
 import matplotlib.pyplot as plt
 import time as time
 import numpy as np
 from scipy.sparse import csr_matrix
-
+from pytometry.HSNE.main.hsne_prog import HSNE, tSNE
 
 # IMPORTANT! Change this link to the location of a h5ad file
 # Example:   r"/home/username/Public/myAnndataFile.h5ad"
@@ -68,7 +67,7 @@ hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
 
 print('Test started...')
 p0 = time.time()
-scales = hsne.fit(scale=4, calc_embedding='last', verbose=True)
+scales = hsne.fit(scale=3, calc_embedding='last', verbose=True)
 p1 = time.time()
 print('--- Complete Test finished in %s seconds! ---'%(p1-p0))
 
