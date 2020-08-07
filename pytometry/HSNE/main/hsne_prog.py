@@ -394,7 +394,7 @@ class HSNE:
           Weight-Vector W with the weights if the landmarks from scale s with
           length (n_landmarks_s)
         '''
-        if W_old is None or W_old is 1:
+        if W_old is None or W_old == 1:
             W_old = np.ones((np.shape(I)[0],))
         # W_s = np.array(np.sum((W_old * I.transpose()).transpose(), axis=0))  # W_old * I
         # W_s = W_s.flatten()
