@@ -10,7 +10,7 @@ from scipy.stats import entropy
 import matplotlib.pyplot as plt
 import time as time
 import platform
-import multiprocessing
+import multiprocessing as mp
 from pytometry.HSNE.Other.LassoScatterSelector import SelectFromCollection
 
 OS = platform.system()
@@ -78,7 +78,7 @@ class HSNE:
         '''
         if verbose: print('Starting HSNE...')
         if verbose: print('Anndata object with %d events' % (np.shape(self.adata.X)[0]))
-        if use_mp: print('Will use multiprocessing. Processors available: %d' % (multiprocessing.cpu_count()))
+        if use_mp: print('Will use multiprocessing. Processors available: %d' % (mp.cpu_count()))
         tsne = tSNE()
         # create empty scale slots
         for i in range(scale):
@@ -246,7 +246,7 @@ class HSNE:
 
             if verbose: print('calc_T: Calculating transition matrix...')
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             probs = p.map(_helper_method_calc_T, [dist.data for dist in distances_nn])
             p.terminate()
             p.join()
@@ -312,7 +312,7 @@ class HSNE:
             if verbose: print('get_landmarks: start multiprocessing')
             # create matrix with every initial state (diagonal 1)
             init_states = csr_matrix((np.ones(n_events), (range(n_events), range(n_events))))
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             hit_list = p.map(_helper_method_get_landmarks, [state for state in init_states])
             p.terminate()
             p.join()
@@ -479,7 +479,7 @@ class HSNE:
             # start random walks
             if verbose: print('calc_AoI: Starting random walks')
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             # OLD TODO remove
             # I = p.map(_helper_method_AoI_rw, [s for s in init_states])
             # I = p.map(_helper_method_AoI_eval, [r for r in I]) # replaced this I and one line before.. maybe 1 function?
@@ -550,7 +550,7 @@ class HSNE:
             global HELPER_VAR
             HELPER_VAR = {'W': W, 'num_lm_s_prev': num_lm_s_prev}
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             I_with_W = p.map(_helper_method_T_next_mul_W, [it for it in I_t])
 
             # I_with_W = np.reshape(I_with_W, (num_lm_s_prev, num_lm_s)) # FIXME Fehler
