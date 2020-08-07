@@ -1,57 +1,53 @@
 import scanpy as sc
-import anndata
 import numpy as np
-#from numpy.lib.tests.test_function_base import TestAdd_newdoc
 from sklearn.manifold import _utils
 from sklearn.manifold._t_sne import _joint_probabilities
 from sklearn.neighbors._unsupervised import NearestNeighbors
-from scipy.sparse import csr_matrix, bsr_matrix, lil_matrix
+from scipy.sparse import csr_matrix, bsr_matrix, lil_matrix, vstack, hstack
 from scipy.special import softmax
 from sklearn.manifold import TSNE
 from scipy.stats import entropy
-from math import isclose
-import pandas as pd
-from random import seed
-from random import random
 import matplotlib.pyplot as plt
 import time as time
 import platform
-import multiprocessing
-from Other.LassoScatterSelector import SelectFromCollection
+import multiprocessing as mp
+from ..Other.LassoScatterSelector import SelectFromCollection
+
 
 OS = platform.system()
-#OS = 'Windows'
-HELPER_VAR = None
+# OS = 'Windows'
+use_mp = OS != 'Windows'  # multiprocessing only available on Unix
+HELPER_VAR = dict()
 
 
 class HSNE:
     class _Scale:
-        def __init__(self, X=None, T=None, I=None, W=None, P=None, X_tsne=None, lm_ind=None):
+        def __init__(self, X=None, T=None, I=None, W=None, P=None, X_hsne=None, lm_ind=None):
             self.X = X
             self.T = T
             self.I = I
             self.W = W
             self.P = P
-            self.X_tsne = X_tsne
-            self.lm_ind=lm_ind
+            self.X_hsne = X_hsne
+            self.lm_ind = lm_ind
 
         def calc_embedding(self):
             tsne = tSNE()
-            self.X_tsne = tsne.fit_transform(self.X, P=self.P)
+            self.X_hsne = tsne.fit_transform(self.X, P=self.P)
 
         # TODO
         def show_selected_lm(self):
-            if self.X_tsne is None:
+            if self.X_hsne is None:
                 self.calc_embedding()
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.scatter(self.X_tsne[:,0], self.X_tsne[:,1], c='blue')
-            ax.scatter(self.X_tsne[self.lm_ind,0], self.X_tsne[self.lm_ind,1], c='red')
+            ax.scatter(self.X_hsne[:, 0], self.X_hsne[:, 1], c='blue')
+            ax.scatter(self.X_hsne[self.lm_ind, 0], self.X_hsne[self.lm_ind, 1], c='red')
             plt.show()
 
-
-
-    def __init__(self, adata, imp_channels=[]):
+    def __init__(self, adata, imp_channels=None):
+        if imp_channels is None:
+            imp_channels = []
         self.adata = adata  # anndata object
         self._set_imp_channels(imp_channels)
 
@@ -64,17 +60,14 @@ class HSNE:
         # initialize empty list of scales
         self.scales = list()
 
-
     def print_status(self):
         print('---STATUS HSNE OBJECT---')
-        print('Anndata object loaded: %s'%(self.adata!=None))
+        print('Anndata object loaded: %s' % (self.adata != None))
         if self.adata != None:
-            print('  Event count: %d'%np.shape(self.adata.X)[0])
-            print('  Total channel count: %d'%np.shape(self.adata.X)[1])
-            print('  Important channel count: %d'%len(self.adata.uns['imp_channels']))
-        print('%d scales calculated'%(len(self.scales) if self.scales is not None else 0))
-
-
+            print('  Event count: %d' % np.shape(self.adata.X)[0])
+            print('  Total channel count: %d' % np.shape(self.adata.X)[1])
+            print('  Important channel count: %d' % len(self.adata.uns['imp_channels']))
+        print('%d scales calculated' % (len(self.scales) if self.scales is not None else 0))
 
     # TODO landmarks in its own scale
     def fit(self, scale=1, calc_embedding='last', verbose=False):
@@ -85,8 +78,8 @@ class HSNE:
         :return: list of scales
         '''
         if verbose: print('Starting HSNE...')
-        if verbose: print('Anndata object with %d events'%(np.shape(self.adata.X)[0]))
-        if OS == 'Linux': print('Will use multiprocessing. Processors available: %d'%(multiprocessing.cpu_count()))
+        if verbose: print('Anndata object with %d events' % (np.shape(self.adata.X)[0]))
+        if use_mp: print('Will use multiprocessing. Processors available: %d' % (mp.cpu_count()))
         tsne = tSNE()
         # create empty scale slots
         for i in range(scale):
@@ -99,12 +92,13 @@ class HSNE:
         # I = self.calc_AoI(lm_s, T, verbose=True) # "first" scale does not need I
         W = 1
         P = self.calc_P(T, all_events)
-        X_tsne = None
+        X_hsne = None
         if calc_embedding == 'all':
-            #tsne = tSNE()
-            X_tsne = tsne.fit_transform(self.X[all_events], P=P)  # .adata
-        self.scales[0] = self._Scale(X=X, T=T, W=W, P=P, X_tsne=X_tsne, lm_ind=all_events)  # removed unnecessary I
+            # tsne = tSNE()
+            X_hsne = tsne.fit_transform(self.X[all_events], P=P)  # .adata
+        self.scales[0] = self._Scale(X=X, T=T, W=W, P=P, X_hsne=X_hsne, lm_ind=all_events)  # removed unnecessary I
 
+        lm_s = None
         iterscales = iter(range(len(self.scales)))
         next(iterscales)
         for s in iterscales:
@@ -114,17 +108,16 @@ class HSNE:
             W = self.calc_Weights(I, self.scales[s - 1].W)
             T = self.calc_next_T(I, self.scales[s - 1].W, verbose=verbose)
             P = self.calc_P(T, lm_s)
-            X_tsne = None
+            X_hsne = None
             if calc_embedding == 'all':
-                #tsne = tSNE()
-                X_tsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
+                # tsne = tSNE()
+                X_hsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
 
-            self.scales[s] = self._Scale(X=X, T=T, I=I, W=W, P=P, X_tsne=X_tsne, lm_ind=lm_s)
+            self.scales[s] = self._Scale(X=X, T=T, I=I, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_s)
 
-
-        if calc_embedding == 'last' and self.scales[-1].X_tsne is None:
-            X_tsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
-            self.scales[-1].X_tsne = X_tsne
+        if calc_embedding == 'last' and self.scales[-1].X_hsne is None:
+            X_hsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
+            self.scales[-1].X_hsne = X_hsne
 
         return self.scales
 
@@ -132,17 +125,18 @@ class HSNE:
         if len(self.scales) == 0:
             print("No scales to show")
             pass
-        elif num < 0 or num >=len(self.scales):
-            print("No scale with number %d found\nnum must be between 0 and %d"%(num, len(self.scales)-1))
+        elif num < 0 or num >= len(self.scales):
+            print("No scale with number %d found\nnum must be between 0 and %d" % (num, len(self.scales) - 1))
             pass
         else:
-            if self.scales[num].X_tsne is None:
+            if self.scales[num].X_hsne is None:
                 self.scales[num].calc_embedding()
             fig, ax = plt.subplots()
-            pts = ax.scatter(self.scales[num].X_tsne[:,0], self.scales[num].X_tsne[:,1])
+            pts = ax.scatter(self.scales[num].X_hsne[:, 0], self.scales[num].X_hsne[:, 1])
             ax.set_title("Press enter to accept selected points.")
             selector = SelectFromCollection(ax, pts)
             mut_var = {}
+
             def accept(event):
                 if event.key == "enter":
                     print("Selected points:")
@@ -154,24 +148,24 @@ class HSNE:
 
             fig.canvas.mpl_connect("key_press_event", accept)
             plt.show()
-            return mut_var['points'] # indices of selected points
+            return mut_var['points']  # indices of selected points
 
-    def plot(self, scale_num=-1, channels=-1, subplot_rc=(1,1)):
+    def plot(self, scale_num=-1, channels=-1, subplot_rc=(1, 1)):
 
         if len(self.scales) == 0:
             # no scales calculated
-            print('No scale calculated yet') # TODO add error print
+            print('No scale calculated yet')  # TODO add error print
         if channels == -1:
             # default value handler for the channels to be colored
             channels = self.adata.uns['imp_channels']
-        if self.scales[scale_num].X_tsne is None:
+        if self.scales[scale_num].X_hsne is None:
             # embedding for this scale has not been calculated yet
             self.scales[scale_num].calc_embedding()
         # dynamically add rows and cols for subplots
         num_channels = len(channels)
         r, c = subplot_rc
-        if r == -1 or c == -1 or r*c < num_channels:
-            while r*c < num_channels:
+        if r == -1 or c == -1 or r * c < num_channels:
+            while r * c < num_channels:
                 if r > c:
                     c += 1
                 else:
@@ -179,8 +173,9 @@ class HSNE:
         # create subplots
         for channel in enumerate(channels):
             plt.subplot(r, c, channel[0] + 1)
-            plt.scatter(self.scales[scale_num].X_tsne[:, 0], self.scales[scale_num].X_tsne[:, 1],
-                        c=self.scales[scale_num].X[:, channel[0]], s=(self.scales[scale_num].W/np.max(self.scales[scale_num].W))*50)
+            plt.scatter(self.scales[scale_num].X_hsne[:, 0], self.scales[scale_num].X_hsne[:, 1],
+                        c=self.scales[scale_num].X[:, channel[0]],
+                        s=(self.scales[scale_num].W / np.max(self.scales[scale_num].W)) * 50)
             plt.title('Colored by %s' % self.adata.var_names[channel[1]])
             plt.colorbar()
         plt.show()
@@ -192,14 +187,15 @@ class HSNE:
         '''
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        if self.scales[scale_num].X_tsne is None:
+        if self.scales[scale_num].X_hsne is None:
             self.scales[scale_num].calc_embedding()
         if self.scales[scale_num].lm_ind is None:
             self.scales[scale_num].lm_ind = self.get_landmarks(self.scales[scale_num].X, self.scales[scale_num].T)
 
-        ax.scatter(self.scales[scale_num].X_tsne[:, 0], self.scales[scale_num].X_tsne[:, 1], c='green')
-        ax.scatter(self.scales[scale_num].X_tsne[self.scales[scale_num+1].lm_ind, 0], self.scales[scale_num].X_tsne[self.scales[scale_num+1].lm_ind, 1], c='black')
-        plt.title('Scale number %d'%(scale_num if scale_num>=0 else len(self.scales)-1))
+        ax.scatter(self.scales[scale_num].X_hsne[:, 0], self.scales[scale_num].X_hsne[:, 1], c='green')
+        ax.scatter(self.scales[scale_num].X_hsne[self.scales[scale_num + 1].lm_ind, 0],
+                   self.scales[scale_num].X_hsne[self.scales[scale_num + 1].lm_ind, 1], c='black')
+        plt.title('Scale number %d' % (scale_num if scale_num >= 0 else len(self.scales) - 1))
         plt.show()
 
     def calc_P(self, T_s, lm_s):
@@ -241,22 +237,17 @@ class HSNE:
         returns:
           Transition Matrix T of type csr_matrix (scipy.sparse)
         '''
-        t0 = time.time()    # start timer
-        if OS == 'Linux':
+        t0 = time.time()  # start timer
+        if use_mp:
             if verbose: print('calc_T: Calculation of the %d nearest neighbors...' % n_neighbors)
 
             ## Nearest Neighbors: Version Scanpy
             sc.pp.neighbors(self.adata, n_neighbors=n_neighbors)
             distances_nn = self.adata.obsp['distances']
 
-            # TODO exact composition of sigma
-            if verbose : print('calc_T: Calculating transition matrix...')
-            sigma = n_neighbors / 3  # --> Hinton Roweiß Stochastic Neighbor Embedding np.round(n_neighbors/3)
-            global HELPER_VAR
-            HELPER_VAR = n_neighbors# sigma
-            #probs = []  # 'data' for new T csr_matrix
+            if verbose: print('calc_T: Calculating transition matrix...')
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             probs = p.map(_helper_method_calc_T, [dist.data for dist in distances_nn])
             p.terminate()
             p.join()
@@ -264,20 +255,16 @@ class HSNE:
             for pr in probs:
                 data.extend(pr)
 
-            #for n in range(len(X)):
-            #    d = distances_nn[n].data / np.max(distances_nn[n].data)  # get scaled distances to NN of point n
-            #    probs.extend(softmax((-d ** 2) / sigma))  # calculate T[n]
-
             T = csr_matrix((data, distances_nn.indices, distances_nn.indptr), shape=(len(X), len(X)))
         else:
-            if verbose : print('calc_T: Calculation of the %d nearest neighbors...' % n_neighbors)
+            if verbose: print('calc_T: Calculation of the %d nearest neighbors...' % n_neighbors)
             knn = NearestNeighbors(algorithm='auto', n_neighbors=n_neighbors, metric='euclidean')
             knn.fit(X)
             # Getting distances to NN
             distances_nn = knn.kneighbors_graph(mode='distance')
 
             # TODO exact composition of sigma
-            if verbose : print('calc_T: Calculating transition matrix...')
+            if verbose: print('calc_T: Calculating transition matrix...')
             sigma = n_neighbors / 3  # --> Hinton Roweiß Stochastic Neighbor Embedding np.round(n_neighbors/3)
             probs = []  # 'data' for new T csr_matrix
             for n in range(len(X)):
@@ -285,8 +272,8 @@ class HSNE:
                 probs.extend(softmax((-d ** 2) / sigma))  # calculate T[n]
 
             T = csr_matrix((probs, distances_nn.indices, distances_nn.indptr), shape=(len(X), len(X)))
-        t1 = time.time()    # end timer
-        if verbose: print('calc_T: finished in %s sec'%(t1-t0))
+        t1 = time.time()  # end timer
+        if verbose: print('calc_T: finished in %s sec' % (t1 - t0))
         return T
 
     # TODO edit commentary
@@ -308,9 +295,8 @@ class HSNE:
           return value [123 420 599]
           means adata.X[123 & 420 & 599] are landmarks
         '''
-        t0 = time.time()    # start timer
-        if OS == 'Linux':
-            # NEW
+        t0 = time.time()  # start timer
+        if use_mp:
             n_events = len(X)  # number of events
             proposals = np.zeros(n_events)  # counts how many times point has been reached
             landmarks = list()  # list of landmarks
@@ -327,15 +313,15 @@ class HSNE:
             if verbose: print('get_landmarks: start multiprocessing')
             # create matrix with every initial state (diagonal 1)
             init_states = csr_matrix((np.ones(n_events), (range(n_events), range(n_events))))
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             hit_list = p.map(_helper_method_get_landmarks, [state for state in init_states])
             p.terminate()
             p.join()
             if verbose: print('get_landmarks: multiprocessing finished')
 
             # evaluate results
-            for state_hits in hit_list:     # for every states hit_list
-                for h in state_hits:        # for every hit in some states hit_list
+            for state_hits in hit_list:  # for every states hit_list
+                for h in state_hits:  # for every hit in some states hit_list
                     proposals[h[0]] += h[1]
 
             # collect landmarks
@@ -344,54 +330,6 @@ class HSNE:
                 # if event has been hit min_beta times, it counts as landmark
                 if prop[1] > min_beta:
                     landmarks.append(prop[0])
-            # END NEW
-            '''
-            # OLD
-            
-            n_events = len(X)  # number of events
-            proposals = np.zeros(n_events)  # counts how many times point has been reached
-            landmarks = list()  # list of landmarks
-            # creating T_teta
-            if verbose: print('get_landmarks: Creating transition matrix for %d steps' % teta)
-            t0 = time.time()
-            T_teta = self.calc_T_teta(T, teta)
-            global HELPER_VAR
-            HELPER_VAR = T_teta
-            if verbose: print('get_landmarks: T_teta in %s seconds' % (time.time() - t0))
-
-            if verbose: print('get_landmarks: Starting random walks...')
-            init_states = csr_matrix((np.ones(n_events), (range(n_events), range(n_events))))
-            # all states * T_teta
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
-            init_states = p.map(_helper_method_get_landmarks_mul_T, enumerate(init_states))
-            p.terminate()
-            p.join()
-
-            # iterate over every event
-            for state_prop in enumerate(init_states):
-
-                # calculate probabilities after teta steps
-                # state_prop = state_prop.dot(T_teta)
-                # for t in range(teta):
-                #  state_prop = state_prop.dot(T) # TODO ^50
-
-                # do beta random walks
-                if type(state_prop[1]) is csr_matrix:
-                    destinations = np.random.choice(range(n_events), beta, p=state_prop[1].toarray()[0])
-                else:
-                    destinations = np.random.choice(range(n_events), beta, p=state_prop[1][0])
-                for dest in destinations:
-                    proposals[dest] += 1
-
-            if verbose: print('get_landmarks: Random walks done!')
-
-            if verbose: print('get_landmarks: Evaluating')
-            min_beta = beta * beta_thresh
-            for prop in enumerate(proposals):
-                if prop[1] > min_beta:
-                    landmarks.append(prop[0])
-            # END OLD
-            '''
         else:
             n_events = len(X)  # number of events
             proposals = np.zeros(n_events)  # counts how many times point has been reached
@@ -438,9 +376,9 @@ class HSNE:
                     landmarks.append(prop[0])
 
             # print('Average time per loop: %s\n'%np.mean(time_arr))
-        t1 = time.time()    # end timer
+        t1 = time.time()  # end timer
 
-        if verbose: print('get_landmarks: finished in %s sec' %(t1-t0))
+        if verbose: print('get_landmarks: finished in %s sec' % (t1 - t0))
         return landmarks
 
     def calc_Weights(self, I, W_old=None):
@@ -472,7 +410,7 @@ class HSNE:
         :return: Transition matrix after teta steps
         '''
 
-        t0 = time.time()    # start timer
+        t0 = time.time()  # start timer
         '''
         # TODO: to dense when too full...
         ## Version, where T switches from csr_matrix to dense when to full
@@ -500,15 +438,16 @@ class HSNE:
             return T
         T_teta = bsr_matrix(T.copy())
         T = bsr_matrix(T)
-        if verbose: print('calc_T_teta: initial %s percent full'%(T_teta.nnz/(np.shape(T)[0]**2))*100)
+        if verbose: print('calc_T_teta: initial %s percent full' % (T_teta.nnz / (np.shape(T)[0] ** 2)) * 100)
         for t in range(teta):
             T_teta *= T
             # print(len(T_teta.data)/(np.shape(T_teta)[0]**2)) # prints density of T_teta
-            if verbose: print('calc_T_teta: mul %d --> %s percent full' % (t,(T_teta.nnz / (np.shape(T)[0] ** 2))*100))
-        t1 = time.time()    # end timer
-        if verbose: print('calc_T_teta: finished in %s sec. Filled: %s' % ((t1 - t0),(T_teta.nnz/np.shape(T_teta)[0])))
+            if verbose: print(
+                'calc_T_teta: mul %d --> %s percent full' % (t, (T_teta.nnz / (np.shape(T)[0] ** 2)) * 100))
+        t1 = time.time()  # end timer
+        if verbose: print(
+            'calc_T_teta: finished in %s sec. Filled: %s' % ((t1 - t0), (T_teta.nnz / np.shape(T_teta)[0])))
         return csr_matrix(T_teta)
-
 
     def calc_AoI(self, lm, T, min_lm=10, verbose=False):
         '''
@@ -524,8 +463,8 @@ class HSNE:
         returns:
           Area of Influence Matrix I with dimension (n_events, n_landmarks)
         '''
-        t0 = time.time()    # start timer
-        if OS == 'Linux':
+        t0 = time.time()  # start timer
+        if use_mp:
             from scipy.sparse import vstack
             n_events = np.shape(T)[0]
 
@@ -541,7 +480,7 @@ class HSNE:
             # start random walks
             if verbose: print('calc_AoI: Starting random walks')
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             # OLD TODO remove
             # I = p.map(_helper_method_AoI_rw, [s for s in init_states])
             # I = p.map(_helper_method_AoI_eval, [r for r in I]) # replaced this I and one line before.. maybe 1 function?
@@ -550,9 +489,8 @@ class HSNE:
             p.terminate()
             p.join()
 
-
             I = vstack(I)
-            print(len(I.data) / (np.shape(I)[0] ** 2)) # print density of I
+            print(len(I.data) / (np.shape(I)[0] ** 2))  # print density of I
 
             # Add fraction of hits to row of current event
             # I[state[0]] = csr_matrix((reached_lm / np.sum(reached_lm)))
@@ -588,7 +526,7 @@ class HSNE:
 
                 # Add fraction of hits to row of current event
                 I[state[0]] = csr_matrix((reached_lm / np.sum(reached_lm)))
-        t1 = time.time()    # end timer
+        t1 = time.time()  # end timer
         if verbose: print('calc_AoI: finished in %s sec' % (t1 - t0))
         return I
 
@@ -600,8 +538,8 @@ class HSNE:
         :return:    Transition matrix T_next of type csr_matrix
                     with dimension (num_lm_s, num_lm_s)
         '''
-        t0 = time.time()    # start timer
-        if OS == 'Linux':
+        t0 = time.time()  # start timer
+        if use_mp:
             if verbose: print('calc_next_T: Start multiprocessing...')
             num_lm_s_prev, num_lm_s = np.shape(I)  # dimensionst of I
             # num_lm_s_old > num_lm_s
@@ -613,21 +551,19 @@ class HSNE:
             global HELPER_VAR
             HELPER_VAR = {'W': W, 'num_lm_s_prev': num_lm_s_prev}
 
-            p = multiprocessing.Pool(multiprocessing.cpu_count())
+            p = mp.Pool(mp.cpu_count())
             I_with_W = p.map(_helper_method_T_next_mul_W, [it for it in I_t])
 
-            #I_with_W = np.reshape(I_with_W, (num_lm_s_prev, num_lm_s)) # FIXME Fehler
-            I_with_W = np.reshape(I_with_W, (num_lm_s, num_lm_s_prev)).T
+            I_with_W = hstack(I_with_W)
 
             I = I_with_W.T * I
-            T_next = lil_matrix(np.zeros((num_lm_s, num_lm_s)))
 
             T_next = p.map(_helper_method_T_next_row_div, enumerate(I))
             p.terminate()
             p.join()
 
-            T_next = csr_matrix(np.reshape(T_next, (num_lm_s, num_lm_s)))
-            print(len(T_next.data)/(np.shape(T_next)[0]**2))
+            T_next = vstack(T_next)
+            print(len(T_next.data) / (np.shape(T_next)[0] ** 2))
 
         else:
             num_lm_s_prev, num_lm_s = np.shape(I)  # dimensions of I
@@ -646,7 +582,7 @@ class HSNE:
             for r in enumerate(I):
                 T_next[r[0], :] = r[1] / np.sum(r[1])
 
-        t1 = time.time()    # end timer
+        t1 = time.time()  # end timer
         if verbose: print('calc_next_T: finished in %s sec' % (t1 - t0))
         return T_next.tocsr()
 
@@ -661,7 +597,6 @@ class HSNE:
         return P
 
 
-# TODO compare
 def _helper_method_get_landmarks(state):
     for i in range(HELPER_VAR['teta']):
         state *= HELPER_VAR['T']
@@ -674,10 +609,10 @@ def _helper_method_get_landmarks(state):
     return [(h[0], h[1]) for h in enumerate(hits) if h[1] > 0]
 
 
-
 def _helper_method_calc_T(dist):
-    d = dist/np.max(dist)
-    return softmax((-d**2)/_binary_search_sigma(d, len(d)))
+    d = dist / np.max(dist)
+    return softmax((-d ** 2) / _binary_search_sigma(d, len(d)))
+
 
 def _binary_search_sigma(d, n_neigh):
     # binary search
@@ -693,6 +628,7 @@ def _binary_search_sigma(d, n_neigh):
             sigma *= 0.5
         else:
             sigma /= 0.5
+
 
 # old helper method, maybe a little bit slower
 def _helper_method_AoI_rw(state_prob):
@@ -713,27 +649,29 @@ def _helper_method_AoI_rw(state_prob):
                 reached_lm[lm.index(erg)] += 1
     return reached_lm
 
+
 # new helper method
 def _helper_method_AoI_rw_new(state):
     # load globals
-    #lm = HELPER_VAR['lm']
-    #min_lm = HELPER_VAR['min_lm']
+    # lm = HELPER_VAR['lm']
+    # min_lm = HELPER_VAR['min_lm']
     T = HELPER_VAR['T']
-    #tick = time.time()
+    # tick = time.time()
     reached_lm = np.zeros(len(HELPER_VAR['lm']))
 
     # do until minimal landmark-"hit"-count is reached
     while np.sum(reached_lm) < HELPER_VAR['min_lm']:
-      erg_random_walk = -1
-      state_prob = state
-      while erg_random_walk not in HELPER_VAR['lm']:
-        state_prob *= T  # (re)calculate state probability
-        erg_random_walk = np.random.choice(np.shape(state)[1], p=state_prob.toarray()[0])
-      reached_lm[HELPER_VAR['lm'].index(erg_random_walk)] += 1
-    #tack = time.time()
-    erg = reached_lm*np.max(reached_lm.data)
-    #print(tack-tick)
+        erg_random_walk = -1
+        state_prob = state
+        while erg_random_walk not in HELPER_VAR['lm']:
+            state_prob *= T  # (re)calculate state probability
+            erg_random_walk = np.random.choice(np.shape(state)[1], p=state_prob.toarray()[0])
+        reached_lm[HELPER_VAR['lm'].index(erg_random_walk)] += 1
+    # tack = time.time()
+    erg = reached_lm * np.max(reached_lm.data)
+    # print(tack-tick)
     return csr_matrix(erg)
+
 
 # current fastest AoI method
 def _helper_method_AoI_rw_new_2(state):
@@ -742,29 +680,31 @@ def _helper_method_AoI_rw_new_2(state):
     lm = HELPER_VAR['lm']
     reached_lm = np.zeros(len(HELPER_VAR['lm']))
 
-    cache = list()          # create empty cache list
-    cache.append(state)     # append initial state vector as first element
+    cache = list()  # create empty cache list
+    cache.append(state)  # append initial state vector as first element
     state_len = np.shape(state)[1]  # get length of vector once
 
     # do until minimal landmark-"hit"-count is reached (--> landmarks_left < 0)
     landmarks_left = HELPER_VAR['min_lm']
     while landmarks_left >= 0:
-        #erg_random_walk = -1
+        # erg_random_walk = -1
         step = 1
         while True:
             if len(cache) <= step:
-                cache.append(cache[step-1]*T)
+                cache.append(cache[step - 1] * T)
             erg_random_walk = np.random.choice(state_len, p=cache[step].toarray()[0])
             if erg_random_walk in lm:
                 reached_lm[lm.index(erg_random_walk)] += 1
                 landmarks_left -= 1
                 break
             step += 1
-    erg = reached_lm*np.max(reached_lm.data)
+    erg = reached_lm * np.max(reached_lm.data)
     return csr_matrix(erg)
+
 
 def _helper_method_AoI_eval(row):
     return csr_matrix((row / np.sum(row)))
+
 
 def _helper_method_get_landmarks_mul_T(enumer_state):
     return enumer_state[1].dot(HELPER_VAR)
@@ -774,7 +714,7 @@ def _helper_method_T_next_mul_W(i):
     # load globals
     W = HELPER_VAR['W']
     num_lm_s_prev = HELPER_VAR['num_lm_s_prev']
-    return np.reshape(i.toarray().reshape((num_lm_s_prev,)) * W, (num_lm_s_prev, 1))
+    return csr_matrix(np.reshape(i.toarray().reshape((num_lm_s_prev,)) * W, (num_lm_s_prev, 1)))
 
 
 def _helper_method_T_next_row_div(r):
@@ -840,10 +780,12 @@ def _joint_probabilities_nn(distances, desired_perplexity, verbose):
               .format(duration))
     return P
 
+
 class tSNE(TSNE):
     '''
     Overwritten TSNE class for embedding
     '''
+
     def fit_transform(self, X, P=None, y=None):
         """Fit X into an embedded space and return that transformed
         output.
@@ -1026,9 +968,3 @@ class tSNE(TSNE):
                           X_embedded=X_embedded,
                           neighbors=neighbors_nn,
                           skip_num_points=skip_num_points)
-
-
-# ----------------------------------------------------------------------------
-
-# LASSO SELECTION
-
