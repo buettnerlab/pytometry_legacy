@@ -7,9 +7,9 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 
-# Important! Change this link to the location of a h5ad file
+# IMPORTANT! Change this link to the location of a h5ad file
 # Example:   r"/home/username/Public/myAnndataFile.h5ad"
-filelocation =  r"/home/foelix/Öffentlich/VBh_converted.h5ad"  # TODO link verallgemeinern für den Test
+filelocation =  r"/home/foelix/Öffentlich/VBh_converted.h5ad"
 
 
 ### TIMETEST ###
