@@ -58,9 +58,9 @@ def time_avg_test(n, subsamplepercentage):
 
 
 ### GRAPHS ###
-
+subsampling_percentage = 0.2
 adata = anndata.read_h5ad(filelocation)
-sc.pp.subsample(adata, 0.1)
+sc.pp.subsample(adata, subsampling_percentage)
 imp_channels = [1,3,5,7,9,13]
 hsne = HSNE(adata, imp_channels=imp_channels)
 hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
