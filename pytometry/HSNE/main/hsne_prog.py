@@ -46,10 +46,11 @@ class HSNE:
             plt.show()
 
     def __init__(self, adata, imp_channels=None):
-        if imp_channels is None:
-            imp_channels = []
-        self.adata = adata  # anndata object
-        self._set_imp_channels(imp_channels)
+        #if imp_channels is None:
+        #    imp_channels = []
+        self.load_adata(adata, imp_channels=imp_channels)
+        #self.adata = adata  # anndata object
+        #self._set_imp_channels(imp_channels)
 
         # normalize X
         self.X = adata.X.T
@@ -202,8 +203,22 @@ class HSNE:
         return (T_s + T_s.transpose()) / (2 * len(lm_s))
 
     def load_adata(self, adata, imp_channels=None):
+        if imp_channels is None:
+            imp_channels = []
+
+        if adata is not None:
+            if len(imp_channels) <= 0:
+                imp_channels = np.array(range(np.shape(self.adata.X)[1]))
+            adata.uns['imp_channels'] = imp_channels
+
         self.adata = adata
-        self._set_X(imp_channels=imp_channels)
+
+
+        # if imp_channels is None:
+        #     imp_channels = []
+        # self.adata = adata
+        # self._set_imp_channels(imp_channels)
+        self._set_X(imp_channels=self.adata.uns['imp_channels'])
 
     def _set_X(self, adata=None, imp_channels=None):
         if adata is not None:
