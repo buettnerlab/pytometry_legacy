@@ -8,7 +8,7 @@ from pytometry.HSNE.main.hsne_prog import HSNE, tSNE
 
 # IMPORTANT! Change this link to the location of a h5ad file
 # Example:   r"/home/username/Public/myAnndataFile.h5ad"
-filelocation =  r"/home/foelix/Öffentlich/VBh_converted.h5ad"
+filelocation =  r"/home/felix/Public/VBh_converted.h5ad"
 
 
 ### TIMETEST ###
@@ -58,12 +58,12 @@ def time_avg_test(n, subsamplepercentage):
 
 
 ### GRAPHS ###
-subsampling_percentage = 0.1
+subsampling_percentage = 0.03
 adata = anndata.read_h5ad(filelocation)
 sc.pp.subsample(adata, subsampling_percentage)
 imp_channels = [1,3,5,7,9,13]
 hsne = HSNE(adata, imp_channels=imp_channels)
-hsne.load_adata(adata, imp_channels=imp_channels)  # load adata file
+#hsne.load_adata(adata)  # load adata file
 
 print('Test started...')
 p0 = time.time()
@@ -73,7 +73,7 @@ print('--- Complete Test finished in %s seconds! ---'%(p1-p0))
 
 hsne.show_selected_lm(scale_num=0)
 hsne.show_selected_lm(scale_num=1)
-hsne.show_selected_lm(scale_num=2)
+#hsne.show_selected_lm(scale_num=2)
 
 
 for scale in enumerate(scales):
