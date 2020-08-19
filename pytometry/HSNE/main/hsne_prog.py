@@ -45,12 +45,15 @@ class HSNE:
             ax.scatter(self.X_hsne[self.lm_ind, 0], self.X_hsne[self.lm_ind, 1], c='red')
             plt.show()
 
-    def __init__(self, adata, imp_channels=None):
-        #if imp_channels is None:
-        #    imp_channels = []
+    def __init__(self, adata, imp_channels=None, n_neighbors=20, beta=100, beta_thresh=1.5, teta=50):
+
         self.load_adata(adata, imp_channels=imp_channels)
-        #self.adata = adata  # anndata object
-        #self._set_imp_channels(imp_channels)
+        self.settings = {
+            'n_neighbors':n_neighbors,
+            'beta':beta,
+            'beta_thresh':beta_thresh,
+            'teta':teta
+        }
 
         # normalize X
         self.X = adata.X.T
@@ -70,7 +73,7 @@ class HSNE:
             print('  Important channel count: %d' % len(self.adata.uns['imp_channels']))
         print('%d scales calculated' % (len(self.scales) if self.scales is not None else 0))
 
-    # TODO landmarks in its own scale
+
     def fit(self, scale=1, calc_embedding='last', verbose=False):
         '''
         Calculating a certain amount of scales
@@ -87,40 +90,46 @@ class HSNE:
             self.scales.append(self._Scale())
 
         # first scale
-        T = self.calc_T(self.X, n_neighbors=20, verbose=verbose)
-        all_events = range(np.shape(self.X)[0])  # self.get_landmarks(self.X, T, beta=100, teta=25)
+        T = self.calc_T(self.X, n_neighbors=self.settings['n_neighbors'], verbose=verbose)
         X = self.X  # [lm_s]
+        lm_ind_s = self.get_landmarks(self.X, T, beta=self.settings['beta'], beta_thresh=self.settings['beta_thresh'], teta=self.settings['teta'], verbose=True)
         # I = self.calc_AoI(lm_s, T, verbose=True) # "first" scale does not need I
         W = 1
-        P = self.calc_P(T, all_events)
+        P = self.calc_P(T, range(np.shape(self.X)[0]))
         X_hsne = None
         if calc_embedding == 'all':
-            # tsne = tSNE()
-            X_hsne = tsne.fit_transform(self.X[all_events], P=P)  # .adata
-        self.scales[0] = self._Scale(X=X, T=T, W=W, P=P, X_hsne=X_hsne, lm_ind=all_events)  # removed unnecessary I
+            X_hsne = tsne.fit_transform(self.X[lm_ind_s], P=P)  # .adata
+        self.scales[0] = self._Scale(X=X, T=T, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_ind_s)  # removed unnecessary I
 
+        # following scales
         lm_s = None
         iterscales = iter(range(len(self.scales)))
         next(iterscales)
         for s in iterscales:
-            lm_s = self.get_landmarks(self.scales[s - 1].X, T, beta=20, teta=10, verbose=verbose)
-            X = self.adata.X[lm_s]
-            I = self.calc_AoI(lm_s, T, verbose=verbose)
-            W = self.calc_Weights(I, self.scales[s - 1].W)
-            T = self.calc_next_T(I, self.scales[s - 1].W, verbose=verbose)
-            P = self.calc_P(T, lm_s)
-            X_hsne = None
-            if calc_embedding == 'all':
-                # tsne = tSNE()
-                X_hsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
+            self.scales[s]=self.getNextScale(self.scales[s-1], calc_embedding=(calc_embedding=='all'))
 
-            self.scales[s] = self._Scale(X=X, T=T, I=I, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_s)
 
         if calc_embedding == 'last' and self.scales[-1].X_hsne is None:
-            X_hsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
-            self.scales[-1].X_hsne = X_hsne
+            # X_hsne = tsne.fit_transform(self.adata.X[lm_s], P=P)
+            self.scales[-1].calc_embedding()  #X_hsne = X_hsne
 
         return self.scales
+
+    def getNextScale(self, scale, calc_embedding=False):
+        tsne = tSNE()
+        lm_ind_s_prev = scale.lm_ind
+        X = self.adata.X[lm_ind_s_prev]
+        I = self.calc_AoI(lm_ind_s_prev, scale.T, verbose=True)
+        T = self.calc_next_T(I, scale.W)
+        W = self.calc_Weights(I, scale.W)
+        P = self.calc_P(T, lm_ind_s_prev)
+        X_hsne = None
+        if calc_embedding:
+            X_hsne = tsne.fit_transform(self.adata.X[lm_ind_s_prev], P=P)
+        lm_s = self.get_landmarks(X, T, beta=self.settings['n_neighbors'], beta_thresh=self.settings['beta_thresh'], teta=self.settings['n_neighbors'], verbose=True)
+        return self._Scale(X=X, T=T, I=I, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_s)
+
+
 
     def lasso_subset(self, num=-1):
         if len(self.scales) == 0:
@@ -191,11 +200,11 @@ class HSNE:
         if self.scales[scale_num].X_hsne is None:
             self.scales[scale_num].calc_embedding()
         if self.scales[scale_num].lm_ind is None:
-            self.scales[scale_num].lm_ind = self.get_landmarks(self.scales[scale_num].X, self.scales[scale_num].T)
+            self.scales[scale_num].lm_ind = self.get_landmarks(self.scales[scale_num].X, self.scales[scale_num].T, beta=self.settings['n_neighbors'], beta_thresh=self.settings['beta_thresh'], teta=self.settings['n_neighbors'], verbose=True)
 
         ax.scatter(self.scales[scale_num].X_hsne[:, 0], self.scales[scale_num].X_hsne[:, 1], c='green')
-        ax.scatter(self.scales[scale_num].X_hsne[self.scales[scale_num + 1].lm_ind, 0],
-                   self.scales[scale_num].X_hsne[self.scales[scale_num + 1].lm_ind, 1], c='black')
+        ax.scatter(self.scales[scale_num].X_hsne[self.scales[scale_num].lm_ind, 0],
+                   self.scales[scale_num].X_hsne[self.scales[scale_num].lm_ind, 1], c='black')
         plt.title('Scale number %d' % (scale_num if scale_num >= 0 else len(self.scales) - 1))
         plt.show()
 
@@ -505,7 +514,8 @@ class HSNE:
             p.join()
 
             I = vstack(I)
-            print(len(I.data) / (np.shape(I)[0] ** 2))  # print density of I
+            # for debugging: next line prints density of I
+            # print(len(I.data) / (np.shape(I)[0] ** 2)) # density of I
 
             # Add fraction of hits to row of current event
             # I[state[0]] = csr_matrix((reached_lm / np.sum(reached_lm)))
