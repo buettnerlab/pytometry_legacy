@@ -97,12 +97,13 @@ class HSNE:
         W = 1
         P = self.calc_P(T, range(np.shape(self.X)[0]))
         X_hsne = None
-        if calc_embedding == 'all':
-            X_hsne = tsne.fit_transform(self.X[lm_ind_s], P=P)  # .adata
+        #if calc_embedding == 'all':
+        #    X_hsne = tsne.fit_transform(self.X, P=P)  # .adata
         self.scales[0] = self._Scale(X=X, T=T, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_ind_s)  # removed unnecessary I
-
+        if calc_embedding == 'all':
+            self.scales[0].calc_embedding()
         # following scales
-        lm_s = None
+
         iterscales = iter(range(len(self.scales)))
         next(iterscales)
         for s in iterscales:
