@@ -58,11 +58,11 @@ def time_avg_test(n, subsamplepercentage):
 
 
 ### GRAPHS ###
-subsampling_percentage = 0.03
+subsampling_percentage = 0.1
 adata = anndata.read_h5ad(filelocation)
 sc.pp.subsample(adata, subsampling_percentage)
 imp_channels = [1,3,5,7,9,13]
-hsne = HSNE(adata, imp_channels=imp_channels)
+hsne = HSNE(adata, imp_channels=imp_channels, beta=50, teta=25)
 #hsne.load_adata(adata)  # load adata file
 
 print('Test started...')
@@ -73,7 +73,7 @@ print('--- Complete Test finished in %s seconds! ---'%(p1-p0))
 
 hsne.show_selected_lm(scale_num=0)
 hsne.show_selected_lm(scale_num=1)
-#hsne.show_selected_lm(scale_num=2)
+hsne.show_selected_lm(scale_num=2)
 
 
 for scale in enumerate(scales):
