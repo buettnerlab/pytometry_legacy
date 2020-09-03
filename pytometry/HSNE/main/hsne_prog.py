@@ -158,9 +158,9 @@ class HSNE:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c='green')
         plt.show()
 
-        sel_scale = self._Scale(X=s.X[r], T=T_r, I=None, W=s.W[r], X_hsne=x_hsne, P=P_r, parent_scale=s_prev)
-        s_next = self.getNextScale(sel_scale)
-        print('')
+        #sel_scale = self._Scale(X=s.X[r], T=T_r, I=None, W=s.W[r], X_hsne=x_hsne, P=P_r, parent_scale=s_prev)
+        #s_next = self.getNextScale(sel_scale)
+        #print('')
 
 
 
