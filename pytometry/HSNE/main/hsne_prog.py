@@ -1,4 +1,5 @@
 import scanpy as sc
+import anndata
 import numpy as np
 from sklearn.manifold import _utils
 from sklearn.manifold._t_sne import _joint_probabilities
@@ -22,7 +23,7 @@ HELPER_VAR = dict()
 
 class HSNE:
     class _Scale:
-        def __init__(self, X=None, T=None, I=None, W=None, P=None, X_hsne=None, lm_ind=None):
+        def __init__(self, X=None, T=None, I=None, W=None, P=None, X_hsne=None, lm_ind=None, parent_scale=None):
             self.X = X
             self.T = T
             self.I = I
@@ -30,8 +31,12 @@ class HSNE:
             self.P = P
             self.X_hsne = X_hsne
             self.lm_ind = lm_ind
+            self.parent_scale = parent_scale
 
         def calc_embedding(self):
+            '''
+            Calculates an embedding (X_hsne) for this scale using its X and P, overwriting X_hsne
+            '''
             tsne = tSNE()
             self.X_hsne = tsne.fit_transform(self.X, P=self.P)
 
@@ -48,16 +53,18 @@ class HSNE:
     def __init__(self, adata, imp_channels=None, n_neighbors=20, beta=100, beta_thresh=1.5, teta=50):
 
         self.load_adata(adata, imp_channels=imp_channels)
+
+        # settings dict for all important setting variables
         self.settings = {
-            'n_neighbors':n_neighbors,
-            'beta':beta,
-            'beta_thresh':beta_thresh,
-            'teta':teta
+            'n_neighbors': n_neighbors,
+            'beta': beta,
+            'beta_thresh': beta_thresh,
+            'teta': teta
         }
 
         # normalize X
-        self.X = adata.X.T
-        for col in enumerate(adata.X.T):
+        self.X = self.adata.X.T
+        for col in enumerate(self.adata.X.T):
             self.X[col[0]] = np.arcsinh(col[1] / 10)
         self.X = self.X.T
 
@@ -66,13 +73,17 @@ class HSNE:
 
     def print_status(self):
         print('---STATUS HSNE OBJECT---')
-        print('Anndata object loaded: %s' % (self.adata != None))
-        if self.adata != None:
+        print('Anndata object loaded: %s' % (True if self.adata is not None else False))
+        if self.adata is not None:
             print('  Event count: %d' % np.shape(self.adata.X)[0])
             print('  Total channel count: %d' % np.shape(self.adata.X)[1])
             print('  Important channel count: %d' % len(self.adata.uns['imp_channels']))
         print('%d scales calculated' % (len(self.scales) if self.scales is not None else 0))
 
+    def subsample(self, percentage):
+        if self.adata is not None:
+            sc.pp.subsample(self.adata, percentage)
+            self._set_X()
 
     def fit(self, scale=1, calc_embedding='last', verbose=False):
         '''
@@ -128,7 +139,28 @@ class HSNE:
         if calc_embedding:
             X_hsne = tsne.fit_transform(self.adata.X[lm_ind_s_prev], P=P)
         lm_s = self.get_landmarks(X, T, beta=self.settings['n_neighbors'], beta_thresh=self.settings['beta_thresh'], teta=self.settings['n_neighbors'], verbose=True)
-        return self._Scale(X=X, T=T, I=I, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_s)
+        return self._Scale(X=X, T=T, I=I, W=W, P=P, X_hsne=X_hsne, lm_ind=lm_s, parent_scale=scale)
+
+
+    def drill(self, num=-1, gamma=0.5):
+        # NEW TODO implementation not finished yet
+        s = self.scales[num]
+        s_prev = s.parent_scale#self.scales[num-1]
+        o = self.lasso_subset(num=num)
+
+        r = [x for x in range(np.shape(s.I)[0]) if np.sum(s.I[x,o])>gamma]
+        T_r = s_prev.T[r,:][:,r]
+        P_r = self.calc_P(T_r, r)
+        tsne = tSNE()
+        x_hsne = tsne.fit_transform(s_prev.X[r], P=P_r)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c='green')
+        plt.show()
+
+        sel_scale = self._Scale(X=s.X[r], T=T_r, I=None, W=s.W[r], X_hsne=x_hsne, P=P_r, parent_scale=s_prev)
+        s_next = self.getNextScale(sel_scale)
+        print('')
 
 
 
@@ -136,7 +168,7 @@ class HSNE:
         if len(self.scales) == 0:
             print("No scales to show")
             pass
-        elif num < 0 or num >= len(self.scales):
+        elif num < -1 or num >= len(self.scales):
             print("No scale with number %d found\nnum must be between 0 and %d" % (num, len(self.scales) - 1))
             pass
         else:
@@ -186,7 +218,7 @@ class HSNE:
             plt.subplot(r, c, channel[0] + 1)
             plt.scatter(self.scales[scale_num].X_hsne[:, 0], self.scales[scale_num].X_hsne[:, 1],
                         c=self.scales[scale_num].X[:, channel[0]],
-                        s=(self.scales[scale_num].W / np.max(self.scales[scale_num].W)) * 50)
+                        s=(self.scales[scale_num].W ))
             plt.title('Colored by %s' % self.adata.var_names[channel[1]])
             plt.colorbar()
         plt.show()
@@ -213,32 +245,33 @@ class HSNE:
         return (T_s + T_s.transpose()) / (2 * len(lm_s))
 
     def load_adata(self, adata, imp_channels=None):
-        if imp_channels is None:
-            imp_channels = []
+
+        # if adata is a link
+        if type(adata)==str:
+            filelocation = adata
+            adata=anndata.read_h5ad(filelocation)
 
         if adata is not None:
-            if len(imp_channels) <= 0:
-                imp_channels = np.array(range(np.shape(self.adata.X)[1]))
+            if imp_channels is None:
+                imp_channels = []
+                if 'imp_channels' not in adata.uns:
+                    imp_channels = np.array(range(np.shape(adata.X)[1]))
             adata.uns['imp_channels'] = imp_channels
 
         self.adata = adata
-
-
-        # if imp_channels is None:
-        #     imp_channels = []
-        # self.adata = adata
-        # self._set_imp_channels(imp_channels)
         self._set_X(imp_channels=self.adata.uns['imp_channels'])
 
     def _set_X(self, adata=None, imp_channels=None):
-        if adata is not None:
-            self.X = adata.X
-            if imp_channels is not None:
-                self.X = self.X[:, imp_channels]
-        elif self.adata is not None:
-            self.X = self.adata.X
-            if imp_channels is not None:
-                self.X = self.X[:, imp_channels]
+        if adata is None:
+            adata = self.adata
+        # normalize X
+        self.X = adata.X.T
+        for col in enumerate(adata.X.T):
+            self.X[col[0]] = np.arcsinh(col[1] / 10)
+        self.X = self.X.T
+        if imp_channels is not None:
+            self.X = self.X[:, imp_channels]
+
 
     def _set_imp_channels(self, imp_channels):
         '''
@@ -258,9 +291,9 @@ class HSNE:
         X:
             data array with dimension (event x channel)
         n_neighbors:
-          number of nearest neighbors to be calculated
+            number of nearest neighbors to be calculated
         returns:
-          Transition Matrix T of type csr_matrix (scipy.sparse)
+            Transition Matrix T of type csr_matrix (scipy.sparse)
         '''
         t0 = time.time()  # start timer
         if use_mp:
@@ -474,7 +507,7 @@ class HSNE:
             'calc_T_teta: finished in %s sec. Filled: %s' % ((t1 - t0), (T_teta.nnz / np.shape(T_teta)[0])))
         return csr_matrix(T_teta)
 
-    def calc_AoI(self, lm, T, min_lm=10, verbose=False):
+    def calc_AoI(self, lm, T, min_lm=100, verbose=False):
         '''
         Calculates the Area of Influence matrix
 
@@ -589,7 +622,8 @@ class HSNE:
             p.join()
 
             T_next = vstack(T_next)
-            print(len(T_next.data) / (np.shape(T_next)[0] ** 2))
+
+            # FIXME maybe getting dense --> numpy more efficient
 
         else:
             num_lm_s_prev, num_lm_s = np.shape(I)  # dimensions of I
@@ -724,7 +758,7 @@ def _helper_method_AoI_rw_new_2(state):
                 landmarks_left -= 1
                 break
             step += 1
-    erg = reached_lm * np.max(reached_lm.data)
+    erg = reached_lm / np.sum(reached_lm.data)
     return csr_matrix(erg)
 
 
