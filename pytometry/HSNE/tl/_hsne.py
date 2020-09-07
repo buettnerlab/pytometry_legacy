@@ -7,6 +7,9 @@ from scipy.sparse import vstack, hstack
 from sklearn.manifold import TSNE
 from sklearn.manifold._t_sne import _joint_probabilities
 from sklearn.manifold import _utils
+import matplotlib.pyplot as plt
+from matplotlib.widgets import LassoSelector
+from matplotlib.path import Path
 
 HELPER_VAR = dict()
 
@@ -20,6 +23,41 @@ class _Scale:
         self.X_hsne = X_hsne
         self.lm_ind = lm_ind
         self.parent_scale = parent_scale
+
+        self.drilled_scale_list = list()
+
+    def drill(self, channel_id=1):
+        #this_scale.drilled_scale_list = list()
+        fig, ax = plt.subplots()
+        pts = ax.scatter(self.X_hsne[:, 0], self.X_hsne[:, 1], s=self.W)
+        ax.set_title("Press enter and close this plot to accept selected points.")
+        selector = _SelectFromCollection(ax, pts)
+        mut_var = {}
+
+        def accept(event):
+            if event.key == "enter":
+                print("Selected points:")
+                print(len(selector.ind))
+                mut_var['points'] = selector.ind
+                selector.disconnect()
+                ax.set_title("")
+                fig.canvas.draw()
+
+        fig.canvas.mpl_connect("key_press_event", accept)
+        plt.show()
+        o = mut_var['points']
+        r = [x for x in range(np.shape(self.I)[0]) if np.sum(self.I[x, o]) > 0.5]
+        T_r = self.parent_scale.T[r, :][:, r]
+        P_r = _calc_P(T_r)
+        tsne = tSNE()
+        x_hsne = tsne.fit_transform(self.parent_scale.X[r], P=P_r)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        weight_vector = self.parent_scale.W
+        if type(weight_vector) is int:
+            weight_vector = None #np.ones(len(x_hsne))
+        ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
+        plt.show()
 
 def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_scales=1):
     if imp_channel_ind is None:
@@ -486,3 +524,61 @@ class tSNE(TSNE):
                           neighbors=neighbors_nn,
                           skip_num_points=skip_num_points)
 
+
+# LASSO SELECTOR
+
+class _SelectFromCollection(object):
+    """Select indices from a matplotlib collection using `LassoSelector`.
+
+    Selected indices are saved in the `ind` attribute. This tool fades out the
+    points that are not part of the selection (i.e., reduces their alpha
+    values). If your collection has alpha < 1, this tool will permanently
+    alter the alpha values.
+
+    Note that this tool selects collection objects based on their *origins*
+    (i.e., `offsets`).
+
+    Parameters
+    ----------
+    ax : :class:`~matplotlib.axes.Axes`
+        Axes to interact with.
+
+    collection : :class:`matplotlib.collections.Collection` subclass
+        Collection you want to select from.
+
+    alpha_other : 0 <= float <= 1
+        To highlight a selection, this tool sets all selected points to an
+        alpha value of 1 and non-selected points to `alpha_other`.
+    """
+
+    def __init__(self, ax, collection, alpha_other=0.3):
+        self.canvas = ax.figure.canvas
+        self.collection = collection
+        self.alpha_other = alpha_other
+
+        self.xys = collection.get_offsets()
+        self.Npts = len(self.xys)
+
+        # Ensure that we have separate colors for each object
+        self.fc = collection.get_facecolors()
+        if len(self.fc) == 0:
+            raise ValueError('Collection must have a facecolor')
+        elif len(self.fc) == 1:
+            self.fc = np.tile(self.fc, (self.Npts, 1))
+
+        self.lasso = LassoSelector(ax, onselect=self.onselect)
+        self.ind = []
+
+    def onselect(self, verts):
+        path = Path(verts)
+        self.ind = np.nonzero(path.contains_points(self.xys))[0]
+        self.fc[:, -1] = self.alpha_other
+        self.fc[self.ind, -1] = 1
+        self.collection.set_facecolors(self.fc)
+        self.canvas.draw_idle()
+
+    def disconnect(self):
+        self.lasso.disconnect_events()
+        self.fc[:, -1] = 1
+        self.collection.set_facecolors(self.fc)
+        self.canvas.draw_idle()
