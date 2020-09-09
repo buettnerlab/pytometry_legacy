@@ -105,7 +105,7 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
     scale_list.append(s_root)   # appending scale
 
     for i in range(num_scales):
-        print('Scale Number %d:' %i)
+        print('Scale Number %d with %d points:' %(i,len(scale_list[i].lm_ind)))
         s_prev = scale_list[i]
         s_curr = _Scale(X=s_prev.X[s_prev.lm_ind, :], parent_scale=s_prev)
         print('I')
