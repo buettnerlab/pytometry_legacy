@@ -41,6 +41,8 @@ def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
         plt.scatter(scales[scale_num].X_hsne[:, 0], scales[scale_num].X_hsne[:, 1],
                     c=scales[scale_num].X[:, channel[0]],
                     s=scales[scale_num].W)
+        plt.xlabel('HSNE1')
+        plt.ylabel('HSNE2')
         plt.title('Colored by %s' % channel[1])
         plt.colorbar()
     plt.show()
