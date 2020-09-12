@@ -59,7 +59,7 @@ class _Scale:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
         plt.show()
 
-def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_scales=1):
+def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False):
     if imp_channel_ind is None:
         imp_channel_ind = range(len(adata.var_names))
     elif len(imp_channel_ind) == 0:
@@ -85,20 +85,15 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
 
     # Create first scale
     s_root = _Scale(X=adata.X[:,imp_channel_ind], W=1)  # reduced x to imp_channels
-    # TODO call by reference issue?
-
-    # nomralizing X
-    # s_root.X = s_root.X.T
-    # for col in enumerate(s_root.X):
-    #     s_root.X[col[0]] = np.arcsinh(col[1] / 10) # TODO arcsinh über ganze matrix
-    # s_root.X = s_root.X.T
 
     print('T')
     s_root.T = _calc_first_T(distances_nn, len(adata.X))
     print('P')
     s_root.P = _calc_P(s_root.T)
-    print('X_hsne')
-    s_root.X_hsne = tsne.fit_transform(s_root.X, P=s_root.P)
+    if include_root_object:
+        print('X_hsne')
+        s_root.X_hsne = tsne.fit_transform(s_root.X, P=s_root.P)
+
     print('lm_ind')
     s_root.lm_ind = _get_landmarks(s_root.T, settings)
 
@@ -121,6 +116,9 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
         print('X_hsne')
         s_curr.X_hsne = tsne.fit_transform(s_curr.X, P=s_curr.P)
         scale_list.append(s_curr)
+
+    if include_root_object == False:
+        scale_list.pop()
 
     adata.uns['hsne_settings'] = settings
     adata.uns['hsne_scales'] = scale_list
@@ -284,23 +282,18 @@ MACHINE_EPSILON = np.finfo(np.double).eps
 def _joint_probabilities_nn(distances, desired_perplexity, verbose):
     """Compute joint probabilities p_ij from distances using just nearest
     neighbors.
-
     This method is approximately equal to _joint_probabilities. The latter
     is O(N), but limiting the joint probability to nearest neighbors improves
     this substantially to O(uN).
-
     Parameters
     ----------
     distances : CSR sparse matrix, shape (n_samples, n_samples)
         Distances of samples to its n_neighbors nearest neighbors. All other
         distances are left to zero (and are not materialized in memory).
-
     desired_perplexity : float
         Desired perplexity of the joint probability distributions.
-
     verbose : int
         Verbosity level.
-
     Returns
     -------
     P : csr sparse matrix, shape (n_samples, n_samples)
@@ -344,7 +337,6 @@ class tSNE(TSNE):
     def fit_transform(self, X, P=None, y=None):
         """Fit X into an embedded space and return that transformed
         output.
-
         Parameters
         ----------
         X : array, shape (n_samples, n_features) or (n_samples, n_samples)
@@ -353,9 +345,7 @@ class tSNE(TSNE):
             is 'exact', X may be a sparse matrix of type 'csr', 'csc'
             or 'coo'. If the method is 'barnes_hut' and the metric is
             'precomputed', X may be a precomputed sparse graph.
-
         y : Ignored
-
         Returns
         -------
         X_new : array, shape (n_samples, n_components)
@@ -529,23 +519,18 @@ class tSNE(TSNE):
 
 class _SelectFromCollection(object):
     """Select indices from a matplotlib collection using `LassoSelector`.
-
     Selected indices are saved in the `ind` attribute. This tool fades out the
     points that are not part of the selection (i.e., reduces their alpha
     values). If your collection has alpha < 1, this tool will permanently
     alter the alpha values.
-
     Note that this tool selects collection objects based on their *origins*
     (i.e., `offsets`).
-
     Parameters
     ----------
     ax : :class:`~matplotlib.axes.Axes`
         Axes to interact with.
-
     collection : :class:`matplotlib.collections.Collection` subclass
         Collection you want to select from.
-
     alpha_other : 0 <= float <= 1
         To highlight a selection, this tool sets all selected points to an
         alpha value of 1 and non-selected points to `alpha_other`.
