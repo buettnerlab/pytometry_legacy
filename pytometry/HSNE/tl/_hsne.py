@@ -81,6 +81,7 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
         raise Exception("k-nearest-neighbor graph has to be constructed first")
     distances_nn = adata.obsp['distances']
 
+    print('Starting hsne: %d points and %d scales'%(len(adata.X),num_scales))
     scale_list = list()
 
     # Create first scale
