@@ -19,7 +19,7 @@ from pytometry.Preprocessing import process_data as proc
 from pytometry.converter import fcswriter
 
 
-def __toanndata(filenamefcs, fcsfile):
+def __toanndata(filenamefcs, fcsfile, save):
     """
     Converts .fcs file to .h5ad file.
     :param filenamefcs: filename without extension
@@ -29,17 +29,19 @@ def __toanndata(filenamefcs, fcsfile):
     fcsdata = fct.FCMeasurement(ID='FCS-file', datafile=fcsfile)
     adata = anndata.AnnData(X=fcsdata.data[:].values)
     adata.var_names = fcsdata.channel_names
-    adata.uns['meta'] = fcsdata.read_meta()
+    adata.uns['meta'] = fcsdata.meta
 
     if '$SPILLOVER' in fcsdata.meta:
         adata.uns['spill_mat'] = proc.create_spillover_mat(fcsdata)
         adata.uns['comp_mat'] = proc.create_comp_mat(adata.uns['spill_mat'])
 
-    adata.write_h5ad(Path(filenamefcs + '_converted' + '.h5ad'))
+    if save:
+        adata.write_h5ad(Path(filenamefcs + '_converted' + '.h5ad'))
+
     return adata
 
 
-def __tofcs(filenameh5ad, anndatafile):
+def __tofcs(filenameh5ad, anndatafile, save):
     """
     Converts .h5ad file to .fcs file.
     :param filenameh5ad: filename without extension
@@ -66,12 +68,14 @@ def __tofcs(filenameh5ad, anndatafile):
     for i in clear_dupl:
         dictionary.pop(i, None)
 
-    fcswriter.write_fcs(Path(filenameh5ad + '_converted' + '.fcs'), ch_shortnames, np.array(adata.var_names).tolist(),
-                        adata.X, dictionary, 'big', False)
+    if save:
+        fcswriter.write_fcs(Path(filenameh5ad + '_converted' + '.fcs'), ch_shortnames, np.array(adata.var_names).tolist(),
+                            adata.X, dictionary, 'big', False)
+
     return fct.FCMeasurement('FCS-file', filenameh5ad + '_converted' + '.fcs')
 
 
-def readandconvert(datafile=''):
+def readandconvert(datafile='', save_flag=False):
     """
     Loads files and converts them according to their extension.
     :rtype: A list of loaded files.
@@ -87,7 +91,7 @@ def readandconvert(datafile=''):
         file_dialog = Tk()
         file_dialog.withdraw()
 
-        file_names = filedialog.askopenfilenames(initialdir="/home/%s/SampleData/" % username, title="Select file",
+        file_names = filedialog.askopenfilenames(initialdir="/home/%s/" % username, title="Select file",
                                                  filetypes=(("all files", "*.*"), ("fcs files", "*.fcs"),
                                                             ("h5ad files", ".h5ad")))
 
@@ -97,9 +101,9 @@ def readandconvert(datafile=''):
         filename, file_extension = os.path.splitext(file_path)
 
         if file_extension == '.fcs':
-            elementlist.append(__toanndata(filename, file_path))
+            elementlist.append(__toanndata(filename, file_path, save_flag))
         elif file_extension == '.h5ad':
-            elementlist.append(__tofcs(filename, file_path))
+            elementlist.append(__tofcs(filename, file_path, save_flag))
         else:
             print('File ' + file_name + ' can not be converted!')
 
