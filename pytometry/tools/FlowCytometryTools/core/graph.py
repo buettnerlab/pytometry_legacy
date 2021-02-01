@@ -15,8 +15,8 @@ import pylab as pl
 from matplotlib import transforms
 from numpy import arange
 
-from pytometry.tools.FlowCytometryTools.core.common_doc import doc_replacer
-from pytometry.tools.FlowCytometryTools.core.utils import to_list
+from tools.FlowCytometryTools.core.common_doc import doc_replacer
+from tools.FlowCytometryTools.core.utils import to_list
 
 
 @doc_replacer

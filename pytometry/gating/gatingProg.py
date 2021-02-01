@@ -66,7 +66,7 @@ class SelectFromCollection(object):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    link_h5ad = r"/home/felix/Public/KR_full_converted.h5ad"
+    link_h5ad = r"/home/felix/Public/datasets/KR_full_converted.h5ad"
     adata = anndata.read_h5ad(r"%s" % link_h5ad)
     data = np.transpose(np.array([adata._get_X()[:,1], adata._get_X()[:,3]]))
     data = data/data.max()

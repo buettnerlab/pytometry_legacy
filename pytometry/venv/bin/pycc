@@ -1,0 +1,3 @@
+#!/home/felix/Documents/GitHub/pytometry/pytometry/venv/bin/python
+from numba.pycc import main
+main()

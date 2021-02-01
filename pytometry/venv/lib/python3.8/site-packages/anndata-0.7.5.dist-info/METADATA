@@ -1,0 +1,86 @@
+Metadata-Version: 2.1
+Name: anndata
+Version: 0.7.5
+Summary: Annotated Data.
+Home-page: http://github.com/theislab/anndata
+Author: Philipp Angerer, Alex Wolf, Isaac Virshup, Sergei Rybakov
+Author-email: phil.angerer@gmail.com, f.alex.wolf@gmx.de
+License: BSD-3-Clause
+Platform: UNKNOWN
+Classifier: Environment :: Console
+Classifier: Framework :: Jupyter
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Natural Language :: English
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Requires-Python: >=3.6
+Requires-Dist: pandas (!=1.1,>=1.0)
+Requires-Dist: numpy (>=1.15)
+Requires-Dist: scipy (~=1.0)
+Requires-Dist: h5py
+Requires-Dist: natsort
+Requires-Dist: packaging
+Requires-Dist: importlib-metadata (>=0.7) ; python_version < "3.8"
+Provides-Extra: dev
+Requires-Dist: setuptools-scm ; extra == 'dev'
+Requires-Dist: pytoml ; extra == 'dev'
+Requires-Dist: black (>=20.8b1) ; extra == 'dev'
+Provides-Extra: doc
+Requires-Dist: sphinx (>=2.0.1) ; extra == 'doc'
+Requires-Dist: sphinx-rtd-theme ; extra == 'doc'
+Requires-Dist: sphinx-autodoc-typehints (>=1.11.0) ; extra == 'doc'
+Requires-Dist: sphinx-issues ; extra == 'doc'
+Requires-Dist: scanpydoc (>=0.5) ; extra == 'doc'
+Requires-Dist: typing-extensions ; (python_version < "3.8") and extra == 'doc'
+Provides-Extra: test
+Requires-Dist: loompy (>=3.0.5) ; extra == 'test'
+Requires-Dist: pytest (>=4.6) ; extra == 'test'
+Requires-Dist: pytest-cov (>=2.10) ; extra == 'test'
+Requires-Dist: codacy-coverage ; extra == 'test'
+Requires-Dist: docutils ; extra == 'test'
+Requires-Dist: zarr ; extra == 'test'
+Requires-Dist: matplotlib ; extra == 'test'
+Requires-Dist: sklearn ; extra == 'test'
+Requires-Dist: xlrd ; extra == 'test'
+Requires-Dist: joblib ; extra == 'test'
+Requires-Dist: boltons ; extra == 'test'
+Requires-Dist: scanpy ; extra == 'test'
+
+|Stars| |PyPI| |PyPIDownloadsTotal| |PyPIDownloadsMonth| |Conda| |Docs| |Build Status| |Coverage|
+
+.. |Stars| image:: https://img.shields.io/github/stars/theislab/anndata?logo=GitHub&color=yellow
+   :target: https://github.com/theislab/anndata/stargazers
+.. |PyPI| image:: https://img.shields.io/pypi/v/anndata.svg
+   :target: https://pypi.org/project/anndata
+.. |PyPIDownloadsTotal| image:: https://pepy.tech/badge/anndata
+   :target: https://pepy.tech/project/anndata
+.. |PyPIDownloadsMonth| image:: https://img.shields.io/pypi/dm/scanpy?logo=PyPI&color=blue
+   :target: https://pypi.org/project/anndata
+.. |Conda| image:: https://img.shields.io/conda/vn/conda-forge/anndata.svg
+   :target: https://anaconda.org/conda-forge/anndata
+.. |Docs| image:: https://readthedocs.com/projects/icb-anndata/badge/?version=latest
+   :target: https://anndata.readthedocs.io
+.. |Build Status| image:: https://travis-ci.org/theislab/anndata.svg?branch=master
+   :target: https://travis-ci.org/theislab/anndata
+.. |Coverage| image:: https://api.codacy.com/project/badge/Coverage/b92ae35b691141ceb5f2ee74beaf39d3
+   :target: https://www.codacy.com/manual/theislab/anndata
+
+anndata - Annotated Data
+========================
+
+``AnnData`` provides a scalable way of keeping track of data and learned annotations.
+
+* Read the `documentation <https://anndata.readthedocs.io>`_.
+* Install via ``pip install anndata`` or ``conda install anndata -c conda-forge``.
+
+.. would be nice to have http://falexwolf.de/img/scanpy/anndata.svg also on GitHub, but it’s much too wide there;
+.. GitHub doesn’t plan to resolve scaling images: https://github.com/github/markup/issues/295
+
+

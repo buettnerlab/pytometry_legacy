@@ -1,0 +1,3 @@
+[console_scripts]
+scanpy = scanpy.cli:console_main
+
