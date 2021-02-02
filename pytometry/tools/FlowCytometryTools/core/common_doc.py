@@ -1,4 +1,4 @@
-from tools.FlowCytometryTools.core import docstring
+from pytometry.tools.FlowCytometryTools.core import docstring
 
 ###############################
 # Programmable Documentation  #

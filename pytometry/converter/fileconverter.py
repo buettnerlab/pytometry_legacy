@@ -4,8 +4,8 @@ from pathlib import Path
 import anndata as anndata
 import numpy as np
 import pandas as pd
-import tools.FlowCytometryTools as fct
-from converter import fcswriter
+import pytometry.tools.FlowCytometryTools as fct
+from pytometry.converter import fcswriter
 
 
 # create a spillover matrix

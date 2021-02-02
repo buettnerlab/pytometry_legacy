@@ -12,13 +12,13 @@ from fcsparser import parse as parse_fcs
 from matplotlib.pyplot import figure
 from pandas import DataFrame
 
-import tools.FlowCytometryTools.core.graph as graph
-from tools.FlowCytometryTools.core.bases import (Measurement, MeasurementCollection, OrderedCollection,
+import pytometry.tools.FlowCytometryTools.core.graph as graph
+from pytometry.tools.FlowCytometryTools.core.bases import (Measurement, MeasurementCollection, OrderedCollection,
                                            queueable)
-from tools.FlowCytometryTools.core.common_doc import doc_replacer
-from tools.FlowCytometryTools.core.graph import plot_ndpanel
-from tools.FlowCytometryTools.core.transforms import Transformation
-from tools.FlowCytometryTools.core.utils import to_list
+from pytometry.tools.FlowCytometryTools.core.common_doc import doc_replacer
+from pytometry.tools.FlowCytometryTools.core.graph import plot_ndpanel
+from pytometry.tools.FlowCytometryTools.core.transforms import Transformation
+from pytometry.tools.FlowCytometryTools.core.utils import to_list
 
 
 class FCMeasurement(Measurement):
@@ -205,16 +205,16 @@ class FCMeasurement(Measurement):
                 backend = 'wx'
 
         if backend == 'wx':
-            from tools.FlowCytometryTools.gui.wx_backend import gui
+            from pytometry.tools.FlowCytometryTools.gui.wx_backend import gui
         elif backend == 'webagg':
-            from tools.FlowCytometryTools.gui.webagg_backend import gui
+            from pytometry.tools.FlowCytometryTools.gui.webagg_backend import gui
         else:
             raise ValueError('No support for backend {}'.format(backend))
 
         self.__g = gui.GUILauncher(measurement=self)
 
     def get_gates(self):
-        from tools.FlowCytometryTools.gui.wx_backend import gui
+        from pytometry.tools.FlowCytometryTools.gui.wx_backend import gui
         figure()
         self.__g = gui.GUILauncher(measurement=self)
         self.__gatesList = self.__g.main.get_gatesList()

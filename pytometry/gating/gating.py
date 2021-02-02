@@ -2,10 +2,10 @@ import os
 import anndata
 #from prompt_toolkit.filters import emacs_selection_mode
 
-from converter import fcswriter
+from pytometry.converter import fcswriter
 from pathlib import Path
 import numpy as np
-from tools.FlowCytometryTools import FCMeasurement
+from pytometry.tools.FlowCytometryTools import FCMeasurement
 from tkinter import filedialog, StringVar
 from matplotlib.pyplot import figure
 from fcswrite import fcswrite
