@@ -1,0 +1,9 @@
+
+*.iml
+pytometry/.idea/misc.xml
+pytometry/.idea/modules.xml
+pytometry/.idea/vcs.xml
+pytometry/.idea/workspace.xml
+*.pyc
+pytometry/.idea/inspectionProfiles/profiles_settings.xml
+

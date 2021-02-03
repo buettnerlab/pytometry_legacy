@@ -21,9 +21,9 @@ import six
 from numpy import nan, unravel_index
 from pandas import DataFrame as DF
 
-from pytometry.tools.FlowCytometryTools.core import graph
-from pytometry.tools.FlowCytometryTools.core.common_doc import doc_replacer
-from pytometry.tools.FlowCytometryTools.core.utils import get_tag_value, get_files, save, load, to_list
+from tools.FlowCytometryTools.core import graph
+from tools.FlowCytometryTools.core.common_doc import doc_replacer
+from tools.FlowCytometryTools.core.utils import get_tag_value, get_files, save, load, to_list
 
 
 @doc_replacer

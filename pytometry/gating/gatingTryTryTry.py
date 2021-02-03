@@ -13,7 +13,7 @@ from tkinter import filedialog, StringVar
 
 import numpy as np
 import anndata
-# import pytometry.converter
+# import converter
 
 # from matplotlib.pyplot import *
 import matplotlib.pyplot as plt
@@ -23,10 +23,10 @@ from fcswrite import fcswrite
 from matplotlib.pyplot import figure
 from plotly.graph_objs.layout import xaxis
 
-from pytometry.tools.FlowCytometryTools.core.bases import Measurement
+from tools.FlowCytometryTools.core.bases import Measurement
 from pandas import DataFrame
 # from pylab import *
-from pytometry.tools.FlowCytometryTools import FCMeasurement, ThresholdGate, PolyGate, QuadGate, test_data_dir, test_data_file
+from tools.FlowCytometryTools import FCMeasurement, ThresholdGate, PolyGate, QuadGate, test_data_dir, test_data_file
 import os
 
 from ipywidgets import widgets
@@ -37,7 +37,7 @@ import plotly.offline as offplot
 import numpy as np
 from flask import Flask, render_template, Markup, request, url_for, redirect
 import pytometry
-from pytometry.converter import fcswriter
+from converter import fcswriter
 print('Everything imported')
 
 from ipywidgets import interactive, HBox, VBox

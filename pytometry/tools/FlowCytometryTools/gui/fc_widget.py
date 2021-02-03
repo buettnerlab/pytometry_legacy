@@ -7,8 +7,8 @@ import numpy
 import pylab as pl
 from matplotlib.widgets import Cursor, AxesWidget
 
-from pytometry.tools.FlowCytometryTools import FCMeasurement
-from pytometry.tools.FlowCytometryTools.core.utils import to_list
+from tools.FlowCytometryTools import FCMeasurement
+from tools.FlowCytometryTools.core.utils import to_list
 
 
 def apply_format(var, format_str):
@@ -886,7 +886,7 @@ class FCGateManager(EventGenerator):
     # Returns list of gates
     def get_gates(self):  #Felix
         base_gates = self.get_base_gates()
-        import pytometry.tools.FlowCytometryTools.core.gates as fctgates
+        import tools.FlowCytometryTools.core.gates as fctgates
         transf_gates = set()
         for g in base_gates:
             channels, verts = g.coordinates
