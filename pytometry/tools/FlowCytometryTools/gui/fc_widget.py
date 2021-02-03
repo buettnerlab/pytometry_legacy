@@ -768,7 +768,7 @@ class FCGateManager(EventGenerator):
             parent = self.fig.canvas
 
         if filepath is None:
-            from FlowCytometryTools.gui import dialogs
+            from tools.FlowCytometryTools.gui import dialogs
             filepath = dialogs.open_file_dialog('Select an FCS file to load',
                                                 'FCS files (*.fcs)|*.fcs', parent=parent)
 
