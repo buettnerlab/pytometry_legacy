@@ -19,5 +19,5 @@ if __name__ == '__main__':
 
 
     tl.hsne(adata, imp_channel_ind=imp_channels, num_scales=2)
-    pl.hsne(adata, channels_to_plot=['FSC-A'], scale_num=1)
+    pl.hsne(adata, channels_to_plot=['FSC-A'], scale_num=0)
 

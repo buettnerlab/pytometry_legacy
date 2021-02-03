@@ -119,7 +119,7 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
         scale_list.append(s_curr)
 
     if include_root_object == False:
-        scale_list.pop()
+        scale_list.pop(0)
 
     adata.uns['hsne_settings'] = settings
     adata.uns['hsne_scales'] = scale_list
