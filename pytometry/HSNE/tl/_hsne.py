@@ -10,6 +10,8 @@ from sklearn.manifold import _utils
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
 from matplotlib.path import Path
+from scipy.sparse import csr_matrix, spdiags
+from scipy.sparse.linalg import eigs
 
 HELPER_VAR = dict()
 
@@ -96,7 +98,7 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
         s_root.X_hsne = tsne.fit_transform(s_root.X, P=s_root.P)
 
     print('lm_ind')
-    s_root.lm_ind = _get_landmarks(s_root.T, settings)
+    s_root.lm_ind = _get_landmarks_new(s_root.T, settings)  # baustelle
 
     scale_list.append(s_root)   # appending scale
 
@@ -184,8 +186,7 @@ def _helper_method_AoI(state):
     lm = HELPER_VAR['lm']
     reached_lm = np.zeros(len(lm))
 
-    cache = list()  # create empty cache list
-    cache.append(state)  # append initial state vector as first element
+    cache = state
     state_len = np.shape(state)[1]  # get length of vector once
 
     # do until minimal landmark-"hit"-count is reached (--> landmarks_left < 0)
@@ -194,15 +195,15 @@ def _helper_method_AoI(state):
         # erg_random_walk = -1
         step = 1
         while True:
-            if len(cache) <= step:
-                cache.append(cache[step - 1] * T)
-            erg_random_walk = np.random.choice(state_len, p=cache[step].toarray()[0])
+            cache = cache * T
+            erg_random_walk = np.random.choice(state_len, p=cache.toarray()[0])
             if erg_random_walk in lm:
                 reached_lm[lm.index(erg_random_walk)] += 1
                 landmarks_left -= 1
                 break
             step += 1
     erg = reached_lm / np.sum(reached_lm.data)
+    print("AoI Helper done")
     return csr_matrix(erg)
 
 def _get_landmarks(T, settings):
@@ -233,6 +234,33 @@ def _get_landmarks(T, settings):
         if prop[1] > min_beta:
             landmarks.append(prop[0])
     return landmarks
+
+# mod!!!
+def _get_landmarks_new(T, settings):
+    # make sure it's correctly row-normalised
+    assert (np.allclose(T.sum(1), 1)), "T is not row-normalised"
+
+    # compute the stationary distribution
+    # from scipy.sparse.linalg import eigs
+    D, V = eigs(T.T, which='LM')
+    pi = V[:, 0]
+
+    # make sure pi is entirely real
+    pi = pi.real
+
+    # make sure all entries have the same sign
+    pi /= pi.sum()
+
+    # check pi is normalised correctly
+    assert (np.allclose(pi.sum(), 1)), "Pi is not normalized correctly"
+
+    # new: get rid of negative stuff
+    pi += abs(min(pi))
+    pi /= sum(pi)
+
+    # list of landmarks
+    threshold = int(T.shape[0]/2)
+    return list(pi.argsort()[:threshold])
 
 def _helper_method_get_landmarks(state):
     for i in range(HELPER_VAR['teta']):

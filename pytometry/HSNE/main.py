@@ -13,7 +13,7 @@ if __name__ == '__main__':
     imp_channels = [1, 3, 5, 7, 9, 13]
     imp_channels_names = list(adata.var_names.values[imp_channels])
 
-    sc.pp.subsample(adata, 0.05)
+    sc.pp.subsample(adata, 0.02)
     adata.X = np.arcsinh(adata.X / 10)
     sc.pp.neighbors(adata, n_neighbors=20)
 
