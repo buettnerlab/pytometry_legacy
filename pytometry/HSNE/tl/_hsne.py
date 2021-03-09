@@ -2,8 +2,7 @@ from scipy.stats import entropy
 from scipy.special import softmax
 import multiprocessing as mp
 import numpy as np
-from scipy.sparse import csr_matrix
-from scipy.sparse import vstack, hstack
+from scipy.sparse import csr_matrix, vstack, hstack
 from sklearn.manifold import TSNE
 from sklearn.manifold._t_sne import _joint_probabilities
 from sklearn.manifold import _utils
