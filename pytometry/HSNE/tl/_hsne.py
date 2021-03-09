@@ -60,6 +60,30 @@ class _Scale:
         plt.show()
 
 def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False):
+    '''
+
+    Parameters
+    ----------
+    adata
+       anndata object
+    imp_channel_ind
+       important channels #TODO remove
+    beta
+       beta for landmark search
+    beta_thresh
+       beta_thresh for landmark search
+    teta
+       teta for Area of Influence calculation
+    num_scales
+       number of scales, that will be calculated
+    include_root_object
+       boolean value: true if a simple tSNE should be conducted on the data (first layer)
+
+    Returns
+       modified anndata object
+    -------
+
+    '''
     if imp_channel_ind is None:
         imp_channel_ind = range(len(adata.var_names))
     elif len(imp_channel_ind) == 0:
