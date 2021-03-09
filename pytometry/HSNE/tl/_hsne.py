@@ -59,7 +59,7 @@ class _Scale:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
         plt.show()
 
-def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False):
+def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False, verbose=False):
     '''
 
     Parameters
@@ -76,6 +76,8 @@ def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_o
        number of scales, that will be calculated
     include_root_object
        boolean value: true if a simple tSNE should be conducted on the data (first layer)
+    verbose
+       verbose true or false
 
     Returns
        modified anndata object
@@ -99,40 +101,40 @@ def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_o
         raise Exception("k-nearest-neighbor graph has to be constructed first")
     distances_nn = adata.obsp['distances']
 
-    print('Starting hsne: %d points and %d scales'%(len(adata.X),num_scales))
+    if verbose: print('Starting hsne: %d points and %d scales'%(len(adata.X),num_scales))
     scale_list = list()
 
     # Create first scale
     s_root = _Scale(X=adata.X, W=1)
 
-    print('T')
+    if verbose: print('T')
     s_root.T = _calc_first_T(distances_nn, len(adata.X))
-    print('P')
+    if verbose: print('P')
     s_root.P = _calc_P(s_root.T)
     if include_root_object:
-        print('X_hsne')
+        if verbose: print('X_hsne')
         s_root.X_hsne = tsne.fit_transform(s_root.X, P=s_root.P)
 
-    print('lm_ind')
+    if verbose: print('lm_ind')
     s_root.lm_ind = _get_landmarks(s_root.T, settings)
 
     scale_list.append(s_root)   # appending scale
 
     for i in range(num_scales):
-        print('Scale Number %d with %d points:' %(i,len(scale_list[i].lm_ind)))
+        if verbose: print('Scale Number %d with %d points:' %(i,len(scale_list[i].lm_ind)))
         s_prev = scale_list[i]
         s_curr = _Scale(X=s_prev.X[s_prev.lm_ind, :], parent_scale=s_prev)
-        print('I')
+        if verbose: print('I')
         s_curr.I = _calc_AoI(s_prev)
-        print('W')
+        if verbose: print('W')
         s_curr.W = _calc_Weights(s_curr.I, s_prev.W)
-        print('T')
+        if verbose: print('T')
         s_curr.T = _calc_next_T(s_curr.I, s_prev.W)
-        print('lm_ind')
+        if verbose: print('lm_ind')
         s_curr.lm_ind = _get_landmarks(s_curr.T, settings)
-        print('P')
+        if verbose: print('P')
         s_curr.P = _calc_P(s_curr.T)
-        print('X_hsne')
+        if verbose: print('X_hsne')
         s_curr.X_hsne = tsne.fit_transform(s_curr.X, P=s_curr.P)
         scale_list.append(s_curr)
 
@@ -145,16 +147,56 @@ def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_o
 
 
 def _calc_P(T):
+    '''
+
+    Parameters
+    ----------
+    T
+       transition matrix
+
+    Returns
+       joint probabilities matrix P
+    -------
+
+    '''
     return (T + T.transpose()) / (2 * T.shape[0])
 
 def _calc_Weights(I, W_old):
+    '''
+
+    Parameters
+    ----------
+    I
+       Area of Influence matrix
+    W_old
+       old weights vector
+
+    Returns
+       new weights vector
+    -------
+
+    '''
     if type(W_old) is int: #W_old is None or W_old is 1:
         W_old = np.ones((I.shape[0],))
     W_s = np.array(W_old * I).reshape((I.shape[1]))
     return W_s
 
 def _calc_next_T(I, W):
-    num_lm_s_prev, num_lm_s = (I.shape[0],I.shape[1])  # dimensionst of I
+    '''
+
+    Parameters
+    ----------
+    I
+       Area of Influence matrix
+    W
+       weight vector
+
+    Returns
+       next transition matrix T
+    -------
+
+    '''
+    num_lm_s_prev, num_lm_s = (I.shape[0],I.shape[1])  # dimensions of I
     # num_lm_s_old > num_lm_s
 
     I_t = I.transpose()  # transposed Influence matrix

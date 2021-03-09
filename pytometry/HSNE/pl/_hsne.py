@@ -3,6 +3,23 @@ import matplotlib.pyplot as plt
 
 
 def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
+    '''
+
+    Parameters
+    ----------
+    adata
+       anndata object
+    channels_to_plot
+       optional list of channel names, that can be plotted. If Null, than every channel will be plotted
+    scale_num
+       scale number that will be plotted
+    subplot_grid_dim
+       dimensions of the subplot grid
+
+    Returns
+    -------
+
+    '''
     try:
         adata.uns['hsne_scales']
     except KeyError as e:
@@ -20,11 +37,6 @@ def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
             raise Exception("Channel with name %s not found in \n%s"%(channel_name, all_calculated_channel_names))
 
     channels_to_plot_ind = [all_channel_names.index(name) for name in channels_to_plot] #all_calculated_channel_names]
-
-
-    # if self.scales[scale_num].X_hsne is None:
-    #     # embedding for this scale has not been calculated yet
-    #     self.scales[scale_num].calc_embedding()
 
     # dynamically add rows and cols for subplots
     num_channels = len(channels_to_plot)

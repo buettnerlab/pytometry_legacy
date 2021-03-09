@@ -18,7 +18,6 @@ if __name__ == '__main__':
     adata.X = np.arcsinh(adata.X / 10)
     sc.pp.neighbors(adata, n_neighbors=20)
 
-
-    tl.hsne(adata, num_scales=2)
+    tl.hsne(adata, beta=50, beta_thresh=1.5, teta=25, num_scales=1, include_root_object=False, verbose=True)
     pl.hsne(adata, channels_to_plot=['FSC-A'], scale_num=0)
 
