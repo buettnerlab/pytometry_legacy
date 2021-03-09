@@ -11,7 +11,7 @@ def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
 
     settings = adata.uns['hsne_settings']
     all_channel_names = list(adata.var_names.values)
-    all_calculated_channel_names = adata.var_names.values[settings['imp_channel_ind']]  # available channels
+    all_calculated_channel_names = adata.var_names.values  # available channels
     if channels_to_plot is None:
         channels_to_plot = all_calculated_channel_names
 

@@ -59,15 +59,13 @@ class _Scale:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
         plt.show()
 
-def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False):
+def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False):
     '''
 
     Parameters
     ----------
     adata
        anndata object
-    imp_channel_ind
-       important channels #TODO remove
     beta
        beta for landmark search
     beta_thresh
@@ -84,17 +82,13 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
     -------
 
     '''
-    if imp_channel_ind is None:
-        imp_channel_ind = range(len(adata.var_names))
-    elif len(imp_channel_ind) == 0:
-        imp_channel_ind = range(len(adata.var_names))
+
 
     # settings dict for all important setting variables
     settings = {
         'beta': beta,
         'beta_thresh': beta_thresh,
-        'teta': teta,
-        'imp_channel_ind' : imp_channel_ind
+        'teta': teta
     }
     tsne = tSNE()
 
@@ -109,7 +103,7 @@ def hsne(adata, imp_channel_ind=None, beta=100, beta_thresh=1.5, teta=50, num_sc
     scale_list = list()
 
     # Create first scale
-    s_root = _Scale(X=adata.X[:,imp_channel_ind], W=1)  # reduced x to imp_channels
+    s_root = _Scale(X=adata.X, W=1)
 
     print('T')
     s_root.T = _calc_first_T(distances_nn, len(adata.X))
