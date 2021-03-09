@@ -184,8 +184,7 @@ def _helper_method_AoI(state):
     lm = HELPER_VAR['lm']
     reached_lm = np.zeros(len(lm))
 
-    cache = list()  # create empty cache list
-    cache.append(state)  # append initial state vector as first element
+    cache = state
     state_len = np.shape(state)[1]  # get length of vector once
 
     # do until minimal landmark-"hit"-count is reached (--> landmarks_left < 0)
@@ -194,9 +193,8 @@ def _helper_method_AoI(state):
         # erg_random_walk = -1
         step = 1
         while True:
-            if len(cache) <= step:
-                cache.append(cache[step - 1] * T)
-            erg_random_walk = np.random.choice(state_len, p=cache[step].toarray()[0])
+            cache = cache * T
+            erg_random_walk = np.random.choice(state_len, p=cache.toarray()[0])
             if erg_random_walk in lm:
                 reached_lm[lm.index(erg_random_walk)] += 1
                 landmarks_left -= 1
