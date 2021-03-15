@@ -49,7 +49,14 @@ def make_sample(file, normalize=True):
         return FCMeasurement(ID="Data", datafile=tempfile)
 
     elif file.endswith(".fcs"):
-        return FCMeasurement(ID="Data", datafile=file)
+        # TODO evaluate
+        # New Version: converts to .h5ad for normalization
+        import converter.fileconverter as fileconverter
+        fileconverter.read_convert(file)
+        return make_sample(f'{file[:len(file)-3]}_converted.h5ad',normalize=normalize)
+
+        # Old Version: just reads .fcs file
+        #return FCMeasurement(ID="Data", datafile=file)
 
 
 def get_gate_from_interactive(fcs_file=None, sample=None):
