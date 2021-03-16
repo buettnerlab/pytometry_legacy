@@ -14,7 +14,7 @@ from fcswrite import fcswrite
 
 # Help functions
 
-def make_sample(file):
+def make_sample(file, normalize=True):
     '''
     Returns FCMeasurement (sample) of given file
     :param file:
@@ -35,6 +35,7 @@ def make_sample(file):
                       '$BEGINDATA', '$ENDDATA', '$BYTEORD', '$DATATYPE',
                       '$MODE', '$NEXTDATA', '$TOT', '$PAR', '$fcswrite version']
         adata = anndata.read_h5ad(file)
+        if normalize: adata.X = np.arcsinh(adata.X / 10)
         dictionary = adata.uns['meta']
         ch_shortnames = dictionary['_channels_'][:, 0]
         count = 1
@@ -48,7 +49,14 @@ def make_sample(file):
         return FCMeasurement(ID="Data", datafile=tempfile)
 
     elif file.endswith(".fcs"):
-        return FCMeasurement(ID="Data", datafile=file)
+        # TODO evaluate
+        # New Version: converts to .h5ad for normalization
+        import converter.fileconverter as fileconverter
+        fileconverter.read_convert(file)
+        return make_sample(f'{file[:len(file)-3]}_converted.h5ad',normalize=normalize)
+
+        # Old Version: just reads .fcs file
+        #return FCMeasurement(ID="Data", datafile=file)
 
 
 def get_gate_from_interactive(fcs_file=None, sample=None):

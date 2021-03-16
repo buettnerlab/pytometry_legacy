@@ -13,6 +13,28 @@ from matplotlib.path import Path
 HELPER_VAR = dict()
 
 class _Scale:
+    '''
+    Class that contains information about a Scale
+    Properties:
+    self.X
+       datapoints
+    self.T
+       Transiition matrix
+    self.I
+       Area of Influence matrix
+    self.W
+       Weight vector
+    self.P
+       Probability distribution
+    self.X_hsne
+       Embedding positions
+    self.lm_ind
+       landmark indices
+    self.parent_scale
+       parent scale (_Scale object)
+
+
+    '''
     def __init__(self, X=None, T=None, I=None, W=None, P=None, X_hsne=None, lm_ind=None, parent_scale=None):
         self.X = X
         self.T = T
@@ -23,7 +45,7 @@ class _Scale:
         self.lm_ind = lm_ind
         self.parent_scale = parent_scale
 
-        self.drilled_scale_list = list()
+        self.drilled_scale_list = list()   #TODO remove
 
     def drill(self, channel_id=1):
         #this_scale.drilled_scale_list = list()
@@ -215,15 +237,21 @@ def _calc_next_T(I, W):
     return T_next.tocsr()
 
 def _helper_method_T_next_mul_W(i):
+    ### Multiprocessing helper method ###
     # load globals
     W = HELPER_VAR['W']
     num_lm_s_prev = HELPER_VAR['num_lm_s_prev']
     return csr_matrix(np.reshape(i.toarray().reshape((num_lm_s_prev,)) * W, (num_lm_s_prev, 1)))
 
 def _helper_method_T_next_row_div(r):
+    ### Multiprocessing helper method ###
     return r[1] / np.sum(r[1])
 
 def _calc_AoI(scale, min_lm=100):
+    '''
+    Calculates the Area of Influence of a given scale
+
+    '''
     n_events = scale.T.shape[0]
     # create state matrix containing all initial states
     init_states = csr_matrix((np.ones(n_events), (range(n_events), range(n_events))))
@@ -238,6 +266,7 @@ def _calc_AoI(scale, min_lm=100):
     return I
 
 def _helper_method_AoI(state):
+    ### Multiprocessing helper method ###
     # load globals
     T = HELPER_VAR['T']
     lm = HELPER_VAR['lm']
@@ -263,7 +292,18 @@ def _helper_method_AoI(state):
     return csr_matrix(erg)
 
 def _get_landmarks(T, settings):
+    '''
+    Parameters
+    ----------
+    T
+       Transition matrix
+    settings
+       settings dict
 
+    Returns
+       list of landmark indices
+    -------
+    '''
     n_events = T.shape[0]
     proposals = np.zeros(n_events)  # counts how many times point has been reached
     landmarks = list()  # list of landmarks
@@ -292,6 +332,7 @@ def _get_landmarks(T, settings):
     return landmarks
 
 def _helper_method_get_landmarks(state):
+    ### Multiprocessing helper method ###
     for i in range(HELPER_VAR['teta']):
         state *= HELPER_VAR['T']
     destinations = np.random.choice(range(HELPER_VAR['n_events']), HELPER_VAR['beta'], p=state.toarray()[0])
@@ -301,6 +342,18 @@ def _helper_method_get_landmarks(state):
     return [(h[0], h[1]) for h in enumerate(hits) if h[1] > 0]
 
 def _calc_first_T(distances_nn, dim):
+    '''
+    Parameters
+    ----------
+    distances_nn
+       distances of nearest neighbor graph
+    dim
+       dimensions of Transition matrix
+
+    Returns
+       Transition matrix
+    -------
+    '''
     p = mp.Pool(mp.cpu_count())
     probs = p.map(_helper_method_calc_T, [dist.data for dist in distances_nn])
     p.terminate()
@@ -313,6 +366,7 @@ def _calc_first_T(distances_nn, dim):
 
 
 def _helper_method_calc_T(dist):
+    ### Multiprocessing helmper method ###
     d = dist / np.max(dist)
     return softmax((-d ** 2) / _binary_search_sigma(d, len(d)))
 
@@ -333,7 +387,10 @@ def _binary_search_sigma(d, n_neigh):
 
 
 
-########################################################################################################################
+############################################################################
+### Overwritten tSNE from sklearn, that takes a probability distribution ###
+### as a parameter instead of calculating it internally                  ###
+############################################################################
 
 MACHINE_EPSILON = np.finfo(np.double).eps
 
@@ -390,6 +447,7 @@ def _joint_probabilities_nn(distances, desired_perplexity, verbose):
 class tSNE(TSNE):
     '''
     Overwritten TSNE class for embedding
+    --> additional parameter: P (Probability distribution matrix)
     '''
 
     def fit_transform(self, X, P=None, y=None):
@@ -573,7 +631,10 @@ class tSNE(TSNE):
                           skip_num_points=skip_num_points)
 
 
-# LASSO SELECTOR
+############################################################################
+### Lasso Selector                                                       ###
+### Not finished yet. Used to drill into Data                            ###
+############################################################################
 
 class _SelectFromCollection(object):
     """Select indices from a matplotlib collection using `LassoSelector`.
