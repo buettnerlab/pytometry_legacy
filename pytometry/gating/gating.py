@@ -6,9 +6,12 @@ from converter import fcswriter
 from pathlib import Path
 import numpy as np
 from tools.FlowCytometryTools import FCMeasurement
+import tkinter as tk
+from tkinter.ttk import Treeview
 from tkinter import filedialog, StringVar
 from matplotlib.pyplot import figure
 from fcswrite import fcswrite
+
 
 
 
@@ -90,11 +93,12 @@ def get_sample_data(fcs_file):
         if fcs_file.endswith(".h5ad"):
             # convert
             adata = anndata.read_h5ad(fcs_file)
-            fcswrite.write_fcs(Path('/home/felix/Public/ICB/Backup/KR_full' + '_converted' + '.fcs'),
+            converted_file_path = fcs_file[:fcs_file.rfind('.')] + '_converted.fcs'
+            fcswrite.write_fcs(Path(converted_file_path), #Path('/home/felix/Public/ICB/Backup/KR_full' + '_converted' + '.fcs')
                                np.array(adata.var_names).tolist(),
                                adata.X, {}, 'big', False, False, False, False, False)
-            file = r"/home/felix/Public/ICB/Backup/KR_full_converted.fcs"
-            return FCMeasurement(ID="Data", data_file=file)
+            file = converted_file_path  #r"/home/felix/Public/ICB/Backup/KR_full_converted.fcs"
+            return FCMeasurement(ID="Data", datafile=file)
 
 
 # Gate with parent of the gate
@@ -115,20 +119,15 @@ class GateObject:
 
 class GatePlotter:
 
-    def __init__(self):
-        import tkinter as tk
-        from tkinter.ttk import Treeview
+    def __init__(self, filename=''):
         self.gates = list()     # first return value:   list of GateLink's
         self.content = list()   # second return value:  X of gated anndata
 
         self.window = tk.Tk()
-        self.filename = ''
         self.root_sample = None  # original sample (kinda backup)
         self.work_sample = None  # sample to be altered
 
-        # BEGIN Developer options #TODO remove
-        self.filename = r"/home/felix/Public/KR_full_converted.h5ad"
-        # END Developer options
+        self.filename = filename
 
         self.root_sample = make_sample(self.filename)
         self.work_sample = self.root_sample.copy()
@@ -198,6 +197,7 @@ class GatePlotter:
                     sample = sample.transform('tlog', channels=channel, direction=direction, th=1)
         return sample
 
+
     def btn_deleteGate(self):
         curgate = self.treeView_gates.focus()
         if curgate is not None:
@@ -231,6 +231,7 @@ class GatePlotter:
                 #self.content.append(self.get_content(g))
         self._refreshTree()
 
+
     def validate_gate_name(self, name):
         blacklist = [g.gate.name for g in self.gates]
         if name in blacklist:
@@ -257,6 +258,7 @@ class GatePlotter:
             self.root_sample = make_sample(self.filename)
             self.work_sample = self.root_sample.copy()
 
+
     def open_gate(self, event):
         '''
 
@@ -279,4 +281,6 @@ class GatePlotter:
         self._refreshTree()
 
 
-gp = GatePlotter()
+if __name__ == '__main__':
+    # insert link to .fcs or .h5ad file (or leave blank to later select file in file chooser)
+    gp = GatePlotter(filename=r"/home/felix/Public/datasets/KR_full_converted.h5ad")
