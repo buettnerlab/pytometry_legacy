@@ -11,7 +11,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy
 import pandas
-import pylab as pl
+import matplotlib.pylab as pl
 from matplotlib import transforms
 from numpy import arange
 

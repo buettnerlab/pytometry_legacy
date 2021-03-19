@@ -4,7 +4,7 @@ from __future__ import print_function
 import itertools
 
 import numpy
-import pylab as pl
+import matplotlib.pylab as pl
 from matplotlib.widgets import Cursor, AxesWidget
 
 from tools.FlowCytometryTools import FCMeasurement
