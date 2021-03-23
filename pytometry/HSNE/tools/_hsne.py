@@ -80,7 +80,16 @@ class _Scale:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
         plt.show()
 
-def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False, verbose=False, copy: bool = False):
+def hsne(
+        adata,
+         beta=100,
+        beta_thresh=1.5,
+        teta=50,
+        num_scales=1,
+        include_root_object=False,
+        verbose=False,
+        copy: bool = False
+):
     '''
 
     Parameters

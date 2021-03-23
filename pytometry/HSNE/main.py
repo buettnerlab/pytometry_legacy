@@ -1,7 +1,7 @@
 import scanpy as sc
 import anndata
-import pl as pl
-import tl as tl
+import plotting as pl
+import tools as tl
 import numpy as np
 
 

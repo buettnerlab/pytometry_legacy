@@ -23,7 +23,7 @@ def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
     try:
         adata.uns['hsne_scales']
     except KeyError as e:
-        raise Exception("scales have to be calculated first with tl.hsne")
+        raise Exception("scales have to be calculated first with tools.hsne")
     scales = adata.uns['hsne_scales']
 
     settings = adata.uns['hsne_settings']

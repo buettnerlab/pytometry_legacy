@@ -5,7 +5,7 @@ import anndata
 from converter import fcswriter
 from pathlib import Path
 import numpy as np
-from tools.FlowCytometryTools import FCMeasurement
+from .tools.FlowCytometryTools import FCMeasurement
 import tkinter as tk
 from tkinter.ttk import Treeview
 from tkinter import filedialog, StringVar

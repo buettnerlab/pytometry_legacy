@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import wx
 
-from tools.FlowCytometryTools.gui import fc_widget
+from gating.tools.FlowCytometryTools.gui import fc_widget
 from tools.FlowCytometryTools.gui.wx_backend.wireframe import GeneratedWireframe
 
 
