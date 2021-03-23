@@ -80,7 +80,7 @@ class _Scale:
         ax.scatter(x_hsne[:, 0], x_hsne[:, 1], c=self.parent_scale.X[r,channel_id], s=weight_vector)
         plt.show()
 
-def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False, verbose=False):
+def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_object=False, verbose=False, copy: bool = False):
     '''
 
     Parameters
@@ -106,6 +106,7 @@ def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_o
 
     '''
 
+    adata = adata.copy() if copy else adata
 
     # settings dict for all important setting variables
     settings = {
@@ -164,7 +165,7 @@ def hsne(adata, beta=100, beta_thresh=1.5, teta=50, num_scales=1, include_root_o
 
     adata.uns['hsne_settings'] = settings
     adata.uns['hsne_scales'] = scale_list
-    return adata
+    return adata if copy else None
 
 
 def _calc_P(T):
