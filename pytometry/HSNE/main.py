@@ -9,7 +9,7 @@ import numpy as np
 if __name__ == '__main__':
 
     # read file from disk
-    filelocation = r"/home/felix/Public/datasets/VBh_converted.h5ad"
+    filelocation = r"../datasets/VBh_converted.h5ad"
     adata = anndata.read_h5ad(filelocation)
 
     # reduce dataset to a set of channels
