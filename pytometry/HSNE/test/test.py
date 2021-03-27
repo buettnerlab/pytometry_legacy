@@ -1,7 +1,7 @@
 import scanpy as sc
 import anndata
-import plotting as pl
-import tools as tl
+import HSNE.plotting as pl
+import HSNE.tools as tl
 import numpy as np
 
 
@@ -9,7 +9,7 @@ import numpy as np
 if __name__ == '__main__':
 
     # read file from disk
-    filelocation = r"../datasets/VBh_converted.h5ad"
+    filelocation = r"test/datasets/VBh_converted.h5ad"
     adata = anndata.read_h5ad(filelocation)
 
     # reduce dataset to a set of channels
