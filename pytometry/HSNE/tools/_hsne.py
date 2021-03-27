@@ -19,7 +19,7 @@ class _Scale:
     self.X
        datapoints
     self.T
-       Transiition matrix
+       Transition matrix
     self.I
        Area of Influence matrix
     self.W
