@@ -8,7 +8,7 @@ import matplotlib.pylab as pl
 from matplotlib.widgets import Cursor, AxesWidget
 
 from tools.FlowCytometryTools import FCMeasurement
-from gating.tools.FlowCytometryTools.core.utils import to_list
+from tools.FlowCytometryTools.core.utils import to_list
 
 
 def apply_format(var, format_str):

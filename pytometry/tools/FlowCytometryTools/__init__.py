@@ -3,9 +3,9 @@ from __future__ import absolute_import
 from ._version import version as __version__
 from ._doc import __doc__
 
-from .core.containers import (FCMeasurement, FCCollection, FCOrderedCollection,
+from ..FlowCytometryTools.core.containers import (FCMeasurement, FCCollection, FCOrderedCollection,
                                                              FCPlate)
-import core.graph as graph
+from ..FlowCytometryTools.core import graph as graph
 
 
 def _get_paths():
