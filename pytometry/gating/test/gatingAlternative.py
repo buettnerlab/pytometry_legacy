@@ -1,4 +1,7 @@
-#import anndata_tools.Gating.gating as gtn
+'''
+This is a alternative gating strategy.
+It uses matplotlib, but it is very slow due to the huge datasets in Flow Cytometry
+'''
 
 import numpy as np
 import anndata
