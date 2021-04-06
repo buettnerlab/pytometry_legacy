@@ -13,6 +13,7 @@ from matplotlib.pyplot import figure
 from pandas import DataFrame
 
 #from graph import graph as graph
+from . import graph
 from .bases import (Measurement, MeasurementCollection, OrderedCollection,
                                           queueable)
 from .common_doc import doc_replacer
