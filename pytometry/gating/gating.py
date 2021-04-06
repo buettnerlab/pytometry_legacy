@@ -284,4 +284,5 @@ class GatePlotter:
 
 if __name__ == '__main__':
     # insert link to .fcs or .h5ad file (or leave blank to later select file in file chooser)
-    gp = GatePlotter(filename=r"/home/felix/Public/datasets/KR_full_converted.h5ad")
+    filename = r"./test/datasets/KR_full_converted.h5ad"
+    gp = GatePlotter(filename=filename)
