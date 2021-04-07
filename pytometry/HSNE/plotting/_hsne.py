@@ -15,10 +15,11 @@ def hsne(adata, channels_to_plot=None, scale_num=-1, subplot_grid_dim=(1, 1)):
        scale number that will be plotted
     subplot_grid_dim
        dimensions of the subplot grid
-
-    Returns
     -------
-
+    Usage:
+        Given an anndata object "adata" containing a HSNE embedding
+        (calculate embedding first with the hsne(...) method in tools)
+        => pl.hsne(adata)
     '''
     try:
         adata.uns['hsne_scales']

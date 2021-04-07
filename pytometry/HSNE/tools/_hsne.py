@@ -112,7 +112,13 @@ def hsne(
     Returns
        modified anndata object
     -------
-
+    Usage:
+        Given an anndata object "adata"
+        k-nearest-neighbor graph required
+        (=> scanpy.pp.neighbors(adata))
+        then call
+         => tl.hsne(adata)
+        adata now contains the calculated scales
     '''
 
     adata = adata.copy() if copy else adata
