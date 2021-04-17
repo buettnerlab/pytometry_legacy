@@ -108,9 +108,13 @@ def hsne(
        boolean value: true if a simple tSNE should be conducted on the data (first layer)
     verbose
        verbose true or false
+    copy
+        Return a copy instead of writing to adata.
 
     Returns
-       modified anndata object
+       Depending on `copy`, returns or updates `adata` with the following fields.
+       **hsne_scales** : `adata.uns` field
+            List of HSNE Scales
     -------
     Usage:
         Given an anndata object "adata"
@@ -118,7 +122,7 @@ def hsne(
         (=> scanpy.pp.neighbors(adata))
         then call
          => tl.hsne(adata)
-        adata now contains the calculated scales
+        adata now contains the calculated scales (in .uns['hsne_scales'])
     '''
 
     adata = adata.copy() if copy else adata
