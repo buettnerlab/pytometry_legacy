@@ -14,3 +14,4 @@ pytometry/HSNE/test/.ipynb_checkpoints/hsne_test_notebook-checkpoint.ipynb
 pytometry/HSNE/test/.ipynb_checkpoints/NewTechniqueSearchNB-checkpoint.ipynb
 pytometry/gating/test/datasets/temp.fcs
 pytometry/HUMAP/test/datasets/VBh_converted.h5ad
+pytometry/gating/test/datasets/VBh_converted.h5ad
