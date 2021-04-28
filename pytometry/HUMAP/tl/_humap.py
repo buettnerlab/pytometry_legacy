@@ -191,6 +191,7 @@ def humap(
         silent=True,
     )
     # TODO H subsampling here?
+    connectivities = neighbors['connectivities']
     if method == 'umap':
         # the data matrix X is really only used for determining the number of connected components
         # for the init condition in the UMAP embedding
