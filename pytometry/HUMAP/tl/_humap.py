@@ -191,7 +191,48 @@ def humap(
         silent=True,
     )
     # TODO H subsampling here?
+
+    # BEGIN SANDBOX
+    # copied from tools._hsne
+    from scipy.special import softmax
+    from scipy.sparse import csr_matrix
+    from scipy.stats import entropy
+    import multiprocessing as mp
+
+    def _helper_method_calc_T(dist):
+        ### Multiprocessing helmper method ###
+        d = dist / np.max(dist)
+        return softmax((-d ** 2) / _binary_search_sigma(d, len(d)))
+
+    def _binary_search_sigma(d, n_neigh):
+        # binary search
+        sigma = 10  # Start Sigma
+        goal = np.log(n_neigh)  # log(k) with k being n_neighbors
+        # Do binary search until entropy ~== log(k)
+        while True:
+            ent = entropy(softmax((-d ** 2) / sigma))
+            # check sigma
+            if np.isclose(ent, goal):
+                return sigma
+            if ent > goal:
+                sigma *= 0.5
+            else:
+                sigma /= 0.5
+
+    dim = X.shape[0]
+    distances_nn = neighbors['connectivities']
+    p = mp.Pool(mp.cpu_count())
+    probs = p.map(_helper_method_calc_T, [dist.data for dist in distances_nn])
+    p.terminate()
+    p.join()
+    data = []
+    for pr in probs:
+        data.extend(pr)
+    T = csr_matrix((data, distances_nn.indices, distances_nn.indptr), shape=(dim, dim))
+
     connectivities = neighbors['connectivities']
+
+    # END SANDBOX
     if method == 'umap':
         # the data matrix X is really only used for determining the number of connected components
         # for the init condition in the UMAP embedding
