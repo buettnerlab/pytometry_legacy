@@ -16,3 +16,4 @@ pytometry/gating/test/datasets/temp.fcs
 pytometry/HUMAP/test/datasets/VBh_converted.h5ad
 pytometry/gating/test/datasets/VBh_converted.h5ad
 pytometry/HUMAP/test/.ipynb_checkpoints/newTechniqueTestNB-checkpoint.ipynb
+pytometry/.idea/libraries/R_User_Library.xml
