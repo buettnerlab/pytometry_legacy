@@ -11,12 +11,12 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy
 import pandas
-import pylab as pl
+import matplotlib.pylab as pl
 from matplotlib import transforms
 from numpy import arange
 
-from pytometry.tools.FlowCytometryTools.core.common_doc import doc_replacer
-from pytometry.tools.FlowCytometryTools.core.utils import to_list
+from .common_doc import doc_replacer
+from .utils import to_list
 
 
 @doc_replacer
@@ -436,7 +436,7 @@ def plot_ndpanel(panel, func=None,
         items, labels = ax_subplots[legend].get_legend_handles_labels()
 
         # lines = ax_subplots[legend].lines
-        # l = pl.legend(lines , map(lambda x : x.get_label(), lines),
+        # l = plotting.legend(lines , map(lambda x : x.get_label(), lines),
         l = pl.legend(items, labels,
                       bbox_to_anchor=(0.9, 0.5), bbox_transform=pl.gcf().transFigure,
                       loc='center left',

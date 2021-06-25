@@ -1,30 +1,41 @@
 import os
 import anndata
-#from prompt_toolkit.filters import emacs_selection_mode
+# from prompt_toolkit.filters import emacs_selection_mode
 
-from pytometry.converter import fcswriter
+from converter import fcswriter
 from pathlib import Path
 import numpy as np
-from pytometry.tools.FlowCytometryTools import FCMeasurement
+from tools.FlowCytometryTools import FCMeasurement
+import tkinter as tk
+from tkinter.ttk import Treeview
 from tkinter import filedialog, StringVar
 from matplotlib.pyplot import figure
 from fcswrite import fcswrite
 
 
-
 # Help functions
 
-def make_sample(file):
+def make_sample(file, normalize=True, cofactor: int = 10):
     '''
     Returns FCMeasurement (sample) of given file
-    :param file:
-        if file is .h5ad:
+
+    file
+        path to file as string
+        if file is type .h5ad:
             - creates temporary .fcs file
             - creates FCMeasurement (sample)
             - deletes temporary .fcs file
-        if file is .fcs:
+        if file is type .fcs:
             - creates FCMeasurement (sample)
-    :return: FCMeasurement (sample)
+    normalize
+        boolean, if the data gets normalized
+    cofactor
+        int, cofactor for normalization
+        np.arcsinh(adata.X / cofactor)
+
+
+    Returns
+        FCMeasurement (sample)
     '''
     dir = os.path.dirname(file) + "/"
     if file.endswith(".h5ad"):
@@ -35,6 +46,7 @@ def make_sample(file):
                       '$BEGINDATA', '$ENDDATA', '$BYTEORD', '$DATATYPE',
                       '$MODE', '$NEXTDATA', '$TOT', '$PAR', '$fcswrite version']
         adata = anndata.read_h5ad(file)
+        if normalize: adata.X = np.arcsinh(adata.X / cofactor)
         dictionary = adata.uns['meta']
         ch_shortnames = dictionary['_channels_'][:, 0]
         count = 1
@@ -48,7 +60,14 @@ def make_sample(file):
         return FCMeasurement(ID="Data", datafile=tempfile)
 
     elif file.endswith(".fcs"):
-        return FCMeasurement(ID="Data", datafile=file)
+        # TODO evaluate
+        # New Version: converts to .h5ad for normalization
+        import converter.fileconverter as fileconverter
+        fileconverter.read_convert(file)
+        return make_sample(f'{file[:len(file) - 3]}_converted.h5ad', normalize=normalize, cofactor=cofactor)
+
+        # Old Version: just reads .fcs file
+        # return FCMeasurement(ID="Data", datafile=file)
 
 
 def get_gate_from_interactive(fcs_file=None, sample=None):
@@ -67,7 +86,8 @@ def get_gate_from_interactive(fcs_file=None, sample=None):
         g = sample.get_gates()
         return g
 
-#TODO
+
+# TODO
 def get_sample_data(fcs_file):
     '''
     Gets sampling data from .fcs file
@@ -82,45 +102,42 @@ def get_sample_data(fcs_file):
         if fcs_file.endswith(".h5ad"):
             # convert
             adata = anndata.read_h5ad(fcs_file)
-            fcswrite.write_fcs(Path('/home/felix/Public/ICB/Backup/KR_full' + '_converted' + '.fcs'),
+            converted_file_path = fcs_file[:fcs_file.rfind('.')] + '_converted.fcs'
+            fcswrite.write_fcs(Path(converted_file_path),
+                               # Path('/home/felix/Public/ICB/Backup/KR_full' + '_converted' + '.fcs')
                                np.array(adata.var_names).tolist(),
                                adata.X, {}, 'big', False, False, False, False, False)
-            file = r"/home/felix/Public/ICB/Backup/KR_full_converted.fcs"
-            return FCMeasurement(ID="Data", data_file=file)
+            file = converted_file_path  # r"/home/felix/Public/ICB/Backup/KR_full_converted.fcs"
+            return FCMeasurement(ID="Data", datafile=file)
 
 
 # Gate with parent of the gate
 class GateObject:
     def __init__(self, gate, sample, parent=None):
-        self.gate = gate        # this gate
-        self.parent = parent    # parent GateObject (if None: root is parent)
-        self.sample = sample    # sample of this gate
+        self.gate = gate  # this gate
+        self.parent = parent  # parent GateObject (if None: root is parent)
+        self.sample = sample  # sample of this gate
         self.generation = self.init_generation()
-        #TODO wieviele Zellen
+        # TODO wieviele Zellen
 
     def init_generation(self):
         if self.parent is None:
             return 0
         else:
-            return self.parent.init_generation()+1
+            return self.parent.init_generation() + 1
 
 
 class GatePlotter:
 
-    def __init__(self):
-        import tkinter as tk
-        from tkinter.ttk import Treeview
-        self.gates = list()     # first return value:   list of GateLink's
-        self.content = list()   # second return value:  X of gated anndata
+    def __init__(self, filename=''):
+        self.gates = list()  # first return value:   list of GateLink's
+        self.content = list()  # second return value:  X of gated anndata
 
         self.window = tk.Tk()
-        self.filename = ''
         self.root_sample = None  # original sample (kinda backup)
         self.work_sample = None  # sample to be altered
 
-        # BEGIN Developer options #TODO remove
-        self.filename = r"/home/felix/Public/KR_full_converted.h5ad"
-        # END Developer options
+        self.filename = filename
 
         self.root_sample = make_sample(self.filename)
         self.work_sample = self.root_sample.copy()
@@ -134,7 +151,7 @@ class GatePlotter:
         self.label_fileName = tk.Label(master=self.window, textvariable=self._filename_var)
         self.button_startGating = tk.Button(master=self.window, text='Start gating',
                                             command=lambda: self.start_gating(self.work_sample))
-        self.treeView_gates = Treeview(master=self.window, selectmode="browse") #Treeview
+        self.treeView_gates = Treeview(master=self.window, selectmode="browse")  # Treeview
         self.button_addGate = tk.Button(master=self.window, text="Add gate",
                                         command=lambda: self.open_gate(None))
         self.button_deleteGate = tk.Button(master=self.window, text="Delete gate",
@@ -154,9 +171,8 @@ class GatePlotter:
         # Start main loop
         self.window.mainloop()
 
-
     def _refreshTree(self):
-        #sort by "level" (root first)
+        # sort by "level" (root first)
         self.treeView_gates.delete(*self.treeView_gates.get_children())
         queue = self.gates.copy()
         while len(queue) is not 0:
@@ -165,13 +181,12 @@ class GatePlotter:
                     queue.remove(g)
                 else:
                     if g.parent is None:
-                        self.treeView_gates.insert('','end',g.gate.name, text=g.gate.name)
+                        self.treeView_gates.insert('', 'end', g.gate.name, text=g.gate.name)
                         queue.remove(g)
                     else:
                         if self.treeView_gates.exists(g.parent.gate.name):
                             self.treeView_gates.insert(g.parent.gate.name, 'end', g.gate.name, text=g.gate.name)
                             queue.remove(g)
-
 
     def _transform_sample(self, sample, function='hlog', direction='forward'):
         '''
@@ -182,11 +197,11 @@ class GatePlotter:
         '''
         if function is 'hlog':
             for channel in sample.channel_names:
-                if channel is not 'Time':  #except time graphs
+                if channel is not 'Time':  # except time graphs
                     sample = sample.transform('hlog', channels=channel, direction=direction, b=1, r=100, d=100)
         if function is 'tlog':
             for channel in sample.channel_names:
-                if channel is not 'Time':  #except time graphs
+                if channel is not 'Time':  # except time graphs
                     sample = sample.transform('tlog', channels=channel, direction=direction, th=1)
         return sample
 
@@ -209,7 +224,6 @@ class GatePlotter:
 
         self._refreshTree()
 
-
     def start_gating(self, sample=None):
         if sample is None:
             sample = self.root_sample
@@ -220,27 +234,26 @@ class GatePlotter:
                 g.name = self.validate_gate_name(g.name)
                 gobj = GateObject(g, sample.gate(g))
                 self.gates.append(gobj)
-                #self.content.append(self.get_content(g))
+                # self.content.append(self.get_content(g))
         self._refreshTree()
 
     def validate_gate_name(self, name):
         blacklist = [g.gate.name for g in self.gates]
         if name in blacklist:
             i = 1
-            ext = ' (%d)'%i
-            while name+ext in blacklist:
+            ext = ' (%d)' % i
+            while name + ext in blacklist:
                 i = i + 1
-                ext = ' (%d)'%i
-            return name+ext
+                ext = ' (%d)' % i
+            return name + ext
         return name
-
 
     def get_file_from_dir(self):
         '''
         Opens file system and filters for .fcs and .h5ad files
         '''
         temp_filename = filedialog.askopenfilename(initialdir="/", title="Select file",
-                                   filetypes=([("anndata files", "*.h5ad"), ("fcs files", "*.fcs")]))
+                                                   filetypes=([("anndata files", "*.h5ad"), ("fcs files", "*.fcs")]))
         if temp_filename is not None:
             # show selected filename in label
             self.filename = r'%s' % temp_filename
@@ -255,13 +268,12 @@ class GatePlotter:
         :param event: Double click event
         :return:
         '''
-        from tkinter import END
         curgate_name = self.treeView_gates.focus()
-        print('Curselection: %s'%curgate_name)
+        print('Curselection: %s' % curgate_name)
         for gate_obj in self.gates:
             if gate_obj.gate.name == curgate_name:
-                print('GateObject: %s' %gate_obj)
-                print('...and its parent: %s' %gate_obj.parent)
+                print('GateObject: %s' % gate_obj)
+                print('...and its parent: %s' % gate_obj.parent)
                 new_gates = get_gate_from_interactive(sample=gate_obj.sample)
                 if new_gates is not None:
                     for ng in new_gates:
@@ -271,4 +283,7 @@ class GatePlotter:
         self._refreshTree()
 
 
-gp = GatePlotter()
+if __name__ == '__main__':
+    # insert link to .fcs or .h5ad file (or leave blank to later select file in file chooser)
+    filename = r"./test/datasets/KR_full_converted.h5ad"
+    gp = GatePlotter(filename=filename)

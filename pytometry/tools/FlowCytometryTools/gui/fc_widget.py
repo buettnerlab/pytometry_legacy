@@ -4,11 +4,11 @@ from __future__ import print_function
 import itertools
 
 import numpy
-import pylab as pl
+import matplotlib.pylab as pl
 from matplotlib.widgets import Cursor, AxesWidget
 
-from pytometry.tools.FlowCytometryTools import FCMeasurement
-from pytometry.tools.FlowCytometryTools.core.utils import to_list
+from tools.FlowCytometryTools import FCMeasurement
+from tools.FlowCytometryTools.core.utils import to_list
 
 
 def apply_format(var, format_str):
@@ -768,7 +768,7 @@ class FCGateManager(EventGenerator):
             parent = self.fig.canvas
 
         if filepath is None:
-            from FlowCytometryTools.gui import dialogs
+            from tools.FlowCytometryTools.gui import dialogs
             filepath = dialogs.open_file_dialog('Select an FCS file to load',
                                                 'FCS files (*.fcs)|*.fcs', parent=parent)
 
@@ -886,7 +886,7 @@ class FCGateManager(EventGenerator):
     # Returns list of gates
     def get_gates(self):  #Felix
         base_gates = self.get_base_gates()
-        import pytometry.tools.FlowCytometryTools.core.gates as fctgates
+        import tools.FlowCytometryTools.core.gates as fctgates
         transf_gates = set()
         for g in base_gates:
             channels, verts = g.coordinates

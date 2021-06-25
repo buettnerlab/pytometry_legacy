@@ -1,15 +1,11 @@
 from __future__ import absolute_import
 
-from pytometry.tools.FlowCytometryTools._version import version as __version__
-from pytometry.tools.FlowCytometryTools._doc import __doc__
+from ._version import version as __version__
+from ._doc import __doc__
 
-from fcsparser.api import parse as parse_fcs
-
-from pytometry.tools.FlowCytometryTools.core.containers import (FCMeasurement, FCCollection, FCOrderedCollection,
-                                                FCPlate)
-from pytometry.tools.FlowCytometryTools.core.gates import ThresholdGate, IntervalGate, QuadGate, PolyGate
-import pytometry.tools.FlowCytometryTools.core.graph as graph
-from pytometry.tools.FlowCytometryTools.core.graph import plotFCM
+from ..FlowCytometryTools.core.containers import (FCMeasurement, FCCollection, FCOrderedCollection,
+                                                             FCPlate)
+from ..FlowCytometryTools.core import graph as graph
 
 
 def _get_paths():

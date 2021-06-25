@@ -1,6 +1,11 @@
-import numpy as np
+'''
+This is a alternative gating strategy.
+It uses matplotlib, but it is very slow due to the huge datasets in Flow Cytometry
+'''
 
-from matplotlib.widgets import LassoSelector
+import numpy as np
+import anndata
+from matplotlib.widgets import LassoSelector, PolygonSelector
 from matplotlib.path import Path
 
 
@@ -43,7 +48,7 @@ class SelectFromCollection(object):
         elif len(self.fc) == 1:
             self.fc = np.tile(self.fc, (self.Npts, 1))
 
-        self.lasso = LassoSelector(ax, onselect=self.onselect)
+        self.lasso = PolygonSelector(ax, onselect=self.onselect)
         self.ind = []
 
     def onselect(self, verts):
@@ -59,3 +64,35 @@ class SelectFromCollection(object):
         self.fc[:, -1] = 1
         self.collection.set_facecolors(self.fc)
         self.canvas.draw_idle()
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    link_h5ad = r"./datasets/KR_full_converted.h5ad"
+    adata = anndata.read_h5ad(r"%s" % link_h5ad)
+    data = np.transpose(np.array([adata._get_X()[:,1], adata._get_X()[:,3]]))
+    data = data/data.max()
+    print(data.max())
+    print(data.min())
+    print(np.shape(data))
+
+    subplot_kw = dict(xlim=(0, 1), ylim=(0, 1), autoscale_on=False)
+    fig, ax = plt.subplots(subplot_kw=subplot_kw)
+
+    pts = ax.scatter(data[:, 0], data[:, 1], s=80)
+    selector = SelectFromCollection(ax, pts)
+
+    def accept(event):
+        if event.key == "enter":
+            print("Selected points:")
+            print(selector.xys[selector.ind])
+            selector.disconnect()
+            ax.set_title("")
+            fig.canvas.draw()
+
+    fig.canvas.mpl_connect("key_press_event", accept)
+    ax.set_title("Press enter to accept selected points.")
+
+    plt.show()
+

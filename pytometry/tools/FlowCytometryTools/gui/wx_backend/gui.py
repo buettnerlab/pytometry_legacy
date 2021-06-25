@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 import wx
 
-from pytometry.tools.FlowCytometryTools.gui import fc_widget
-from pytometry.tools.FlowCytometryTools.gui.wx_backend.wireframe import GeneratedWireframe
+from tools.FlowCytometryTools.gui import fc_widget
+from tools.FlowCytometryTools.gui.wx_backend.wireframe import GeneratedWireframe
 
 
 class GUIEmbedded(GeneratedWireframe):
