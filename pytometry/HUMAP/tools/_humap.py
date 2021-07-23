@@ -15,7 +15,7 @@ def humap(adata, n_scales: int = 1,
     assert 'connectivities' in adata.obsp.keys(), "No knn graph found. Calculate with scanpy.tl.neighbors(...)"
 
     if subs_mode == "factor":
-        assert factor > 0 and factor < 1, "factor has to be between 0 and 1.0"
+        assert 0 < factor < 1, "factor has to be between 0 and 1.0"
 
     # create list with copy of adata as first element
     scales = list()
