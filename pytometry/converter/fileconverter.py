@@ -15,7 +15,7 @@ from tkinter import filedialog
 import FlowCytometryTools as fct
 import anndata
 import numpy as np
-from pytometry.Preprocessing import process_data as proc
+from pytometry.preprocessing import process_data as proc
 from pytometry.converter import fcswriter
 
 
@@ -30,6 +30,20 @@ def __toanndata(filenamefcs, fcsfile, save):
     adata = anndata.AnnData(X=fcsdata.data[:].values)
     adata.var_names = fcsdata.channel_names
     adata.uns['meta'] = fcsdata.meta
+
+    #check for any binary format types in the .uns['meta'] dictionary
+    #and replace by a string
+    keys_all = adata.uns['meta'].keys()
+    for key in keys_all:
+        types = type(adata.uns['meta'][key])
+        if types is dict:
+            keys_sub = adata.uns['meta'][key].keys()
+            for key2 in keys_sub:
+                types2 = type(adata.uns['meta'][key][key2])
+                if types2 is bytes:
+                    adata.uns['meta'][key][key2] = adata.uns['meta'][key][key2].decode()
+        elif types is bytes:
+            adata.uns['meta'][key] = adata.uns['meta'][key].decode()
 
     if '$SPILLOVER' in fcsdata.meta:
         adata.uns['spill_mat'] = proc.create_spillover_mat(fcsdata)
