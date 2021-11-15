@@ -110,7 +110,9 @@ def __tofcs(filenameh5ad, anndatafile, save):
     return fct.FCMeasurement('FCS-file', filenameh5ad + '_converted' + '.fcs')
 
 
-def readandconvert(datafile='', save_flag=False):
+def readandconvert(datafile='',
+                   spillover_key = '$SPILLOVER',
+                   save_flag=False):
     """
     Loads files and converts them according to their extension.
     :rtype: A list of loaded files.
@@ -136,10 +138,13 @@ def readandconvert(datafile='', save_flag=False):
         filename, file_extension = os.path.splitext(file_path)
 
         if file_extension == '.fcs':
-            elementlist.append(__toanndata(filename, file_path, save_flag))
+            elementlist.append(__toanndata(filename, file_path, spillover_key,  save_flag))
         elif file_extension == '.h5ad':
             elementlist.append(__tofcs(filename, file_path, save_flag))
         else:
             print('File ' + file_name + ' can not be converted!')
-
-    return elementlist
+    
+    if len(elementlist) == 1:
+	return(elementlist[0])
+    else:     
+        return elementlist
