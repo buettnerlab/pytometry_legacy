@@ -1,0 +1,17 @@
+
+*.iml
+pytometry/.idea/misc.xml
+pytometry/.idea/modules.xml
+pytometry/.idea/vcs.xml
+pytometry/.idea/workspace.xml
+*.pyc
+pytometry/.idea/inspectionProfiles/profiles_settings.xml
+
+pytometry/.idea/workspace.xml
+pytometry/.idea/workspace.xml
+pytometry/HSNE/.ipynb_checkpoints/NewTechniqueSearchNB-checkpoint.ipynb
+pytometry/HSNE/test/.ipynb_checkpoints/hsne_test_notebook-checkpoint.ipynb
+pytometry/HSNE/test/.ipynb_checkpoints/NewTechniqueSearchNB-checkpoint.ipynb
+pytometry/gating/test/datasets/temp.fcs
+pytometry/HSNE/test/datasets/VBh_converted.h5ad
+pytometry/gating/test/datasets/VBh_converted.h5ad
