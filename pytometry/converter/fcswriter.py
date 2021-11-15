@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function, unicode_literals, division
-
 import pathlib
 import struct
 import warnings
@@ -10,6 +9,11 @@ import numpy as np
 
 # Replaced by manually defined version
 # from ._version import version
+
+'''
+This is a modified version of the fcswrite package from
+https://github.com/ZELLMECHANIK-DRESDEN/fcswrite
+'''
 
 '''BSD 3-Clause License
 
@@ -50,7 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.'''
 
 
 def write_fcs(filename, ch_shortnames, chn_names, data,
-              text_kw_pr={},
+              text_kw_pr=None,
               endianness="big",
               compat_chn_names=True,
               compat_copy=True,
@@ -64,8 +68,10 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
     ----------
     filename: str or pathlib.Path
         Path to the output .fcs file
-    ch_names: list of str, length C
+    chn_names: list of str, length C
         Names of the output channels
+    ch_shortnames: list of str, length C
+        Shortnames of the output channels
     data: 2d ndarray of shape (N,C)
         The numpy array data to store as .fcs file format.
     text_kw_pr: dict
@@ -101,7 +107,9 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
 
     """
     # determine version manually
-    version = '0.5.1'
+    if text_kw_pr is None:
+        text_kw_pr = {}
+    version = '0.1'
     filename = pathlib.Path(filename)
     if not isinstance(data, np.ndarray):
         data = np.array(data, dtype=float)
@@ -158,8 +166,8 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
                 data[:, ch] *= -1
 
     # DATA segment
-    data1 = data.flatten().tolist()
-    DATA = struct.pack('>%sf' % len(data1), *data1)
+    flattendata = data.flatten().tolist()
+    result_data = struct.pack('>%sf' % len(flattendata), *flattendata)
 
     # TEXT segment
     header_size = 256
@@ -170,25 +178,25 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
     else:
         # use big endian
         byteord = '4,3,2,1'
-    TEXT = '/$BEGINANALYSIS/0/$ENDANALYSIS/0'
-    TEXT += '/$BEGINSTEXT/0/$ENDSTEXT/0'
+    meta_text = '{seperator}$BEGINANALYSIS{seperator}0{seperator}$ENDANALYSIS{seperator}0'
+    meta_text += '{seperator}$BEGINSTEXT{seperator}0{seperator}$ENDSTEXT{seperator}0'
     # Add placeholders for $BEGINDATA and $ENDDATA, because we don't
     # know yet how long TEXT is.
-    TEXT += '/$BEGINDATA/{data_start_byte}/$ENDDATA/{data_end_byte}'
-    TEXT += '/$BYTEORD/{0}/$DATATYPE/F'.format(byteord)
-    TEXT += '/$MODE/L/$NEXTDATA/0/$TOT/{0}'.format(data.shape[0])
-    TEXT += '/$PAR/{0}'.format(data.shape[1])
+    meta_text += '{seperator}$BEGINDATA{seperator}{data_start_byte}{seperator}$ENDDATA{seperator}{data_end_byte}'
+    meta_text += '{seperator}$BYTEORD{seperator}{0}{seperator}$DATATYPE{seperator}F'.format(byteord, seperator=chr(12))
+    meta_text += '{seperator}$MODE{seperator}L{seperator}$NEXTDATA{seperator}0{seperator}$TOT{seperator}' \
+                 '{0}'.format(data.shape[0], seperator=chr(12))
+    meta_text += '{seperator}$PAR{seperator}{0}'.format(data.shape[1], seperator=chr(12))
     # Add fcswrite version
-    TEXT += '/fcswrite version/{0}'.format(version)
+    meta_text += '{seperator}fcswrite version{seperator}{0}'.format(version, seperator=chr(12))
     # Add additional key-value pairs by the user
     for key in sorted(text_kw_pr.keys()):
-        TEXT += '/{0}/{1}'.format(key, text_kw_pr[key])
+        meta_text += '{seperator}{0}{seperator}{1}'.format(key, text_kw_pr[key], seperator=chr(12))
     # Check for content of data columns and set range
     for jj in range(data.shape[1]):
         # Set data maximum to that of int16
-        if (compat_max_int16 and
-                np.max(data[:, jj]) > compat_max_int16 and
-                np.max(data[:, jj]) < 2 ** 15):
+        if (compat_max_int16
+                and compat_max_int16 < np.max(data[:, jj]) < 2 ** 15):
             pnrange = int(2 ** 15)
         # Set range for data with values between 0 and 1
         elif jj in pcnt_cands:
@@ -201,19 +209,19 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
             pnrange = int(abs(np.max(data[:, jj])))
         # TODO:
         # - Set log/lin
-        fmt_str = '/$P{0}B/32/$P{0}E/0,0/$P{0}N/{1}/$P{0}S/{2}/$P{0}R/{3}/$P{0}D/Linear'
-        TEXT += fmt_str.format(jj + 1, ch_shortnames[jj], chn_names[jj], pnrange)
-    TEXT += '/'
+        fmt_str = '{seperator}$P{0}B{seperator}32{seperator}$P{0}E{seperator}0,0{seperator}$P{0}N{seperator}{1}' \
+                  '{seperator}$P{0}S{seperator}{2}{seperator}$P{0}R{seperator}{3}{seperator}$P{0}D{seperator}Linear'
+        meta_text += fmt_str.format(jj + 1, ch_shortnames[jj], chn_names[jj], pnrange, seperator=chr(12))
+    meta_text += '{seperator}'
 
     # SET $BEGINDATA and $ENDDATA using the current size of TEXT plus padding.
     text_padding = 47  # for visual separation and safety
-    data_start_byte = header_size + len(TEXT) + text_padding
-    data_end_byte = data_start_byte + len(DATA) - 1
-    TEXT = TEXT.format(data_start_byte=data_start_byte,
-                       data_end_byte=data_end_byte)
-    lentxt = len(TEXT)
+    data_start_byte = header_size + len(meta_text) + text_padding
+    data_end_byte = data_start_byte + len(result_data) - 1
+    meta_text = meta_text.format(data_start_byte=data_start_byte, data_end_byte=data_end_byte, seperator=chr(12))
+    lentxt = len(meta_text)
     # Pad TEXT segment with spaces until data_start_byte
-    TEXT = TEXT.ljust(data_start_byte - header_size, " ")
+    meta_text = meta_text.ljust(data_start_byte - header_size, " ")
 
     # HEADER segment
     ver = 'FCS3.0'
@@ -234,8 +242,7 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
     anafirst = '{0: >8}'.format(0)
     analast = '{0: >8}'.format(0)
 
-    HEADER = '{0: <256}'.format(ver + '    '
-                                + textfirst
+    header = '{0: <256}'.format(ver + '    ' + textfirst
                                 + textlast
                                 + datafirst
                                 + datalast
@@ -244,7 +251,7 @@ def write_fcs(filename, ch_shortnames, chn_names, data,
 
     # Write data
     with filename.open("wb") as fd:
-        fd.write(HEADER.encode("ascii", "replace"))
-        fd.write(TEXT.encode("ascii", "replace"))
-        fd.write(DATA)
+        fd.write(header.encode("UTF-8", "replace"))
+        fd.write(meta_text.encode("UTF-8", "replace"))
+        fd.write(result_data)
         fd.write(b'00000000')
