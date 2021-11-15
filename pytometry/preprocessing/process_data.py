@@ -21,13 +21,13 @@ import anndata
 import math
 
 
-def create_spillover_mat(fcsdata):
+def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
     """
     Creates a spillover matrix from meta data of an .fcs file
     :param fcsdata: Meta data from .fcs file
     :return: Spillover matrix as panda dataframe.
     """
-    spillover = fcsdata.meta['$SPILLOVER'].split(",")
+    spillover = fcsdata.meta[key].split(",")
     num_col = int(spillover[0])
     channel_names = spillover[1:(int(spillover[0]) + 1)]
     channel_data = fcsdata.meta['_channels_']
@@ -120,8 +120,8 @@ def split_area(adata, option='area'):
         adata = anndata.AnnData(adata.X[:, index], adata.obs, adata.var_names[index], adata.uns)
         return adata
 
-    elif option == 'hight':
-        index = find_indexes(adata, 'hight')
+    elif option == 'height':
+        index = find_indexes(adata, 'height')
         adata = anndata.AnnData(adata.X[:, index], adata.obs, adata.var_names[index], adata.uns)
         return adata
     else:
@@ -130,7 +130,7 @@ def split_area(adata, option='area'):
 
 
 # Plot data. Choose between Area, Hight both(default)
-def plottdata(adata, option=''):
+def plotdata(adata, option=''):
     """
     Creating scatterplot from Anndata object.
     :param adata: AnnData object containing data.
