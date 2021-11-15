@@ -2,15 +2,18 @@ from typing import Dict, Any
 import skfuzzy as fuzz
 import numpy as np
 import scanpy as sc
+import anndata as ann
 from minisom import MiniSom
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd
 import time
-import anndata as anndata
 
 
-colors = ['b', 'orange', 'g', 'r', 'c', 'm', 'y', 'k', 'Brown', 'ForestGreen', 'silver', 'rosybrown', 'sandybrown',
+
+colors = ['b', 'orange', 'g', 'r', 'c', 'm', 'y', 'k', 
+          'Brown', 'ForestGreen', 'silver', 
+          'rosybrown', 'sandybrown',
           'springgreen', 'darkcyan', 'darkviolet']
 
 
@@ -95,7 +98,7 @@ class Cluster:
         :return: Runtime of this algorithm.
         """
         if data is not None:
-            adata = anndata.AnnData(X=data)
+            adata = ann.AnnData(X=data)
 
         else:
             adata = self.adata
@@ -114,9 +117,14 @@ class Cluster:
         endtime = time.time()
         return endtime - starttime
 
-    def som_clustering(self, ncenter=None, iterations=100, sigma=0.3, learning_rate=0.25, data=None):
+    def som_clustering(self, 
+                       ncenter=None, 
+                       iterations=100, 
+                       sigma=0.3, 
+                       learning_rate=0.25, 
+                       data=None):
         """
-        Methode for SOM clustering.
+        Method for SOM clustering.
         :param ncenter: Number of centers for clustering.
         :param iterations: Number of iterations for clustering.
         :param sigma: Sigma parameter for SOM clustering.
@@ -134,18 +142,21 @@ class Cluster:
         starttime = time.time()
         for ncenters in range(2, int(ncenter)+1):
             som_shape = (1, ncenters)
-            som = MiniSom(som_shape[0], som_shape[1], len(self.data[0]), sigma, learning_rate)
+            som = MiniSom(som_shape[0], som_shape[1], len(self.data[0]), 
+                          sigma, learning_rate)
             som.random_weights_init(self.data)
 
             if data is None:
                 data = self.data
-
-            som.train_batch(data, iterations)  # trains the SOM with given iterations
+            # trains the SOM with given iterations
+            som.train_batch(data, iterations)
 
             # Each neuron represents a cluster
             winner_coordinates = np.array([som.winner(x) for x in data]).T
-            # With np.ravel_multi_index we convert the bidimensional coordinates to a monodimensional index.
-            cluster_index = np.ravel_multi_index(winner_coordinates, som_shape)
+            # With np.ravel_multi_index we convert the bidimensional 
+            # coordinates to a monodimensional index.
+            cluster_index = np.ravel_multi_index(winner_coordinates, 
+                                                 som_shape)
             self.SOM_label[str(ncenters)] = cluster_index
             self.SOM_centers[str(ncenters)] = som.get_weights()[0]
 
@@ -170,7 +181,8 @@ class Cluster:
             # Holder for reference dispersion results
             ref_disps = np.zeros(nrefs)
 
-            # For n references, generate random sample and perform kmeans getting resulting dispersion of each loop
+            # For n references, generate random sample and perform kmeans 
+            # getting resulting dispersion of each loop
             for i in range(nrefs):
                 # Create new random reference set
                 random_reference = np.random.random_sample(size=self.data.shape)
@@ -189,7 +201,8 @@ class Cluster:
             # Assign this loop's gap statistic to gaps
             gaps[gap_index] = gap
 
-            resultsdf = resultsdf.append({'clusterCount': k, 'gap': gap}, ignore_index=True)
+            resultsdf = resultsdf.append({'clusterCount': k, 'gap': gap}, 
+                                         ignore_index=True)
         # +2 because center count begins with 2
         self.optimal_k = gaps.argmax() + 2
         self.kmeans_gaps = gaps
@@ -249,10 +262,12 @@ class Cluster:
         clusters = [data[label == i, :] for i in np.unique(label)]
 
         # Find centers
-        center = np.array([cluster_points.mean(axis=0) for cluster_points in clusters])
+        center = np.array([cluster_points.mean(axis=0) 
+                           for cluster_points in clusters])
 
         # Sum up distances
-        s = [np.sum((np.array(clusters)[i] - center[i, :]) ** 2) for i in range(0, len(center))]
+        s = [np.sum((np.array(clusters)[i] - center[i, :]) ** 2) 
+             for i in range(0, len(center))]
         inertia = np.sum(s)
         return inertia
 
@@ -271,7 +286,8 @@ class Cluster:
         # Copy of original AnnData object
         org = self.adata
 
-        # For n references, generate random sample and perform kmeans getting resulting dispersion of each loop
+        # For n references, generate random sample and perform kmeans getting 
+        # resulting dispersion of each loop
         for i in range(nrefs):
             # Create new random reference set
             random_reference = np.random.random_sample(size=self.data.shape)
@@ -284,7 +300,8 @@ class Cluster:
 
             elif methode == 'fuzzy':
                 cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-                    random_reference.T, n_center, 2, error=0.005, maxiter=1000, init=None)
+                    random_reference.T, n_center, 2, error=0.005, 
+                    maxiter=1000, init=None)
 
                 label = np.argmax(u, axis=0)+1
                 ref_disp = self.compute_inertia(random_reference, label)
@@ -297,7 +314,8 @@ class Cluster:
                     ref_disps[i] = ref_disp
 
             elif methode == 'SOM':
-                label, center, runtime = self.som_clustering(n_center, data=random_reference)
+                label, center, runtime = self.som_clustering(n_center, 
+                                                 data=random_reference)
                 ref_disp = self.compute_inertia(random_reference, label)
                 ref_disps[i] = ref_disp
 
