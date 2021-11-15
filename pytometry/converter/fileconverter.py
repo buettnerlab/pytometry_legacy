@@ -20,11 +20,15 @@ from pytometry.preprocessing import process_data as proc
 from pytometry.converter import fcswriter
 
 
-def __toanndata(filenamefcs, fcsfile, save):
+def __toanndata(filenamefcs, 
+                fcsfile, 
+                spillover_key ='$SPILLOVER', 
+                save):
     """
     Converts .fcs file to .h5ad file.
     :param filenamefcs: filename without extension
     :param fcsfile: path to .fcs file
+    :param spillover_key: name to access the spillover matrix, if any
     :return: Anndata object with additional .uns entries
     """
     fcsdata = fct.FCMeasurement(ID='FCS-file', datafile=fcsfile)
@@ -61,8 +65,9 @@ def __toanndata(filenamefcs, fcsfile, save):
                     dict_tmp[col] = df_tmp[col].values
             adata.uns['meta'][key] = dict_tmp
 
-    if '$SPILLOVER' in fcsdata.meta:
-        adata.uns['spill_mat'] = proc.create_spillover_mat(fcsdata)
+    if spillover_key in fcsdata.meta:
+        adata.uns['spill_mat'] = proc.create_spillover_mat(fcsdata, 
+                                                           key=spillover_key)
         adata.uns['comp_mat'] = proc.create_comp_mat(adata.uns['spill_mat'])
 
     if save:
