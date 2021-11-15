@@ -145,6 +145,6 @@ def readandconvert(datafile='',
             print('File ' + file_name + ' can not be converted!')
     
     if len(elementlist) == 1:
-	return(elementlist[0])
+        return(elementlist[0])
     else:     
         return elementlist
