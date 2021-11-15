@@ -23,7 +23,7 @@ from pytometry.converter import fcswriter
 def __toanndata(filenamefcs, 
                 fcsfile, 
                 spillover_key ='$SPILLOVER', 
-                save):
+                save = False):
     """
     Converts .fcs file to .h5ad file.
     :param filenamefcs: filename without extension
