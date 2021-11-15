@@ -51,7 +51,7 @@ class Cluster:
 
     def fuzzy_clustering(self, centers=None):
         """
-        Methode for fuzzy clustering.
+        Method for fuzzy clustering.
         :param centers: Number of centers for clustering.
         :return: Runtime of this algorithm.
         """
@@ -73,7 +73,7 @@ class Cluster:
 
     def k_means_clustering(self, ncenters=None):
         """
-        Methode for k means clustering.
+        Method for k means clustering.
         :param ncenters: Number of centers for clustering.
         :return: Runtime of this algorithm.
         """
@@ -90,9 +90,9 @@ class Cluster:
         endtime = time.time()
         return endtime - starttime
 
-    def leidend_clustering(self, data=None, resolution=1):
+    def leiden_clustering(self, data=None, resolution=1):
         """
-        Methode for Leiden clustering.
+        Method for Leiden clustering.
         :param data: Data to be used for the Leiden clustering.
         :param resolution: Resolution used for the Leiden clustering.
         :return: Runtime of this algorithm.
@@ -210,31 +210,31 @@ class Cluster:
         endtime = time.time()
         return endtime - starttime
 
-    def silhouette_score(self, methode='kmeans', n_center=None):
+    def silhouette_score(self, method='kmeans', n_center=None):
         """
         Calculates the silhouette score for given algorithm.
-        :param methode: The algorithm to calculate silhouette score for.
+        :param method: The algorithm to calculate silhouette score for.
         :param n_center: Number of centers for clustering.
         :return: Silhouette score for choosen algorithm.
         """
         labels = None
 
-        if methode == 'kmeans':
+        if method == 'kmeans':
             labels = self.k_means_clust
-        elif methode == 'fuzzy':
+        elif method == 'fuzzy':
             labels = self.fuzzy_membership
-        elif methode == 'leiden':
+        elif method == 'leiden':
             labels = self.community_cluster
-        elif methode == 'SOM':
+        elif method == 'SOM':
             labels = self.SOM_label
         else:
             print('No clustering done yet!')
 
-        if methode == 'leiden':
+        if method == 'leiden':
             scores = dict()
             score = silhouette_score(self.data, labels)
             scores[str(len(np.unique(self.community_cluster)))] = score
-            self.silhouette_scores[methode] = scores
+            self.silhouette_scores[method] = scores
         elif n_center:  # returns the score directly for specified center
             score = silhouette_score(self.data, labels[str(n_center)])
             return score
@@ -244,7 +244,7 @@ class Cluster:
             for n in range(2, n_center + 1):
                 score = silhouette_score(self.data, labels[str(n)])
                 scores[str(n)] = score
-            self.silhouette_scores[methode] = scores
+            self.silhouette_scores[method] = scores
 
     def compute_inertia(self, data=None, label=None):
         """
@@ -259,22 +259,28 @@ class Cluster:
             return None
 
         # Divide Labels
-        clusters = [data[label == i, :] for i in np.unique(label)]
+        clusters = {}
+        n_label = np.unique(label)
+        center = {}  
+        s = np.zeros(len(n_label))
+        
+        for i in n_label:
+            clusters[i] = np.array(data[label == i, :])
 
-        # Find centers
-        center = np.array([cluster_points.mean(axis=0) 
-                           for cluster_points in clusters])
+            # Find centers
+            center[i] = np.array([clusters[i].mean(axis=0)])
 
-        # Sum up distances
-        s = [np.sum((np.array(clusters)[i] - center[i, :]) ** 2) 
-             for i in range(0, len(center))]
+            # Sum up distances
+            s[i] = np.sum((clusters[i] - center[i]) ** 2)
+        #s = [np.sum((np.array(clusters)[i] - center[i, :]) ** 2) 
+        #     for i in range(0, len(center))]
         inertia = np.sum(s)
         return inertia
 
-    def gap_score(self, methode, inertia, n_center, nrefs=3):
+    def gap_score(self, method, inertia, n_center, nrefs=3):
         """
         Calculates the gap score for a given clustering algorithm.
-        :param methode: The algorithm to calculate gap score for.
+        :param method: The algorithm to calculate gap score for.
         :param inertia: Precalculated inertia for given algorithm.
         :param n_center: Number of centers for given algorithm.
         :param nrefs: Number of reference dispertions to be processed.
@@ -292,13 +298,13 @@ class Cluster:
             # Create new random reference set
             random_reference = np.random.random_sample(size=self.data.shape)
 
-            if methode == 'kmeans':
+            if method == 'kmeans':
                 km = KMeans(n_center)
                 km.fit(random_reference)
                 ref_disp = km.inertia_
                 ref_disps[i] = ref_disp
 
-            elif methode == 'fuzzy':
+            elif method == 'fuzzy':
                 cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
                     random_reference.T, n_center, 2, error=0.005, 
                     maxiter=1000, init=None)
@@ -307,13 +313,13 @@ class Cluster:
                 ref_disp = self.compute_inertia(random_reference, label)
                 ref_disps[i] = ref_disp
 
-            elif methode == 'leiden':
+            elif method == 'leiden':
                 if not ref_disps[0]:
                     label = self.leidend_clustering(data=random_reference)
                     ref_disp = self.compute_inertia(random_reference, label)
                     ref_disps[i] = ref_disp
 
-            elif methode == 'SOM':
+            elif method == 'SOM':
                 label, center, runtime = self.som_clustering(n_center, 
                                                  data=random_reference)
                 ref_disp = self.compute_inertia(random_reference, label)
