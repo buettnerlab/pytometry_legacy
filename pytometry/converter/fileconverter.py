@@ -15,6 +15,7 @@ from tkinter import filedialog
 import FlowCytometryTools as fct
 import anndata
 import numpy as np
+import pandas as pd
 from pytometry.preprocessing import process_data as proc
 from pytometry.converter import fcswriter
 
@@ -44,6 +45,21 @@ def __toanndata(filenamefcs, fcsfile, save):
                     adata.uns['meta'][key][key2] = adata.uns['meta'][key][key2].decode()
         elif types is bytes:
             adata.uns['meta'][key] = adata.uns['meta'][key].decode()
+        elif types is tuple:
+            adata.uns['meta'][key] = list(adata.uns['meta'][key])
+        #check for data frame
+        elif isinstance(adata.uns['meta'][key], pd.DataFrame):    
+            dict_tmp = {}
+            df_tmp = adata.uns['meta'][key]
+            for col in df_tmp.columns:
+                if type(df_tmp[col].iloc[0]) is list:
+                #iterate over list entries
+                    for n in range(len(df_tmp[col].iloc[0])):
+                        dict_tmp[col + str(n+1)] = [entry[n] for entry in df_tmp[col]]    
+                else:
+                    df_tmp[col] = df_tmp[col].fillna(str(0))
+                    dict_tmp[col] = df_tmp[col].values
+            adata.uns['meta'][key] = dict_tmp
 
     if '$SPILLOVER' in fcsdata.meta:
         adata.uns['spill_mat'] = proc.create_spillover_mat(fcsdata)
