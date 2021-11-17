@@ -17,7 +17,7 @@ import os.path
 from tkinter import *
 from tkinter import filedialog
 import FlowCytometryTools as fct
-import anndata
+import anndata as ann
 import math
 
 
@@ -127,7 +127,7 @@ def split_area(adata, option='area'):
         adata.obs[colname] = adata.X[:,non_idx[idx]].copy()
     
     #create new anndata object
-    adataN = anndata.AnnData(X = adata.X[:, np.flatnonzero(index)], 
+    adataN = ann.AnnData(X = adata.X[:, np.flatnonzero(index)], 
                                 obs = adata.obs, 
                             
                                 uns = adata.uns)
@@ -193,7 +193,7 @@ def load_mult_files():
         if file_extension == '.fcs':
             elements.append(fct.FCMeasurement(ID='FCS-file', datafile=file_name))
         elif file_extension == '.h5ad':
-            elements.append(anndata.read_h5ad(file_name))
+            elements.append(ann.read_h5ad(file_name))
         else:
             print('File ' + file_name + ' can not be loaded!')
 

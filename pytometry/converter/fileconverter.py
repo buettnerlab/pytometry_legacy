@@ -13,7 +13,7 @@ from pathlib import Path
 from tkinter import *
 from tkinter import filedialog
 import FlowCytometryTools as fct
-import anndata
+import anndata as ann
 import numpy as np
 import pandas as pd
 
@@ -34,7 +34,7 @@ def __toanndata(filenamefcs,
     :return: Anndata object with additional .uns entries
     """
     fcsdata = fct.FCMeasurement(ID='FCS-file', datafile=fcsfile)
-    adata = anndata.AnnData(X=fcsdata.data[:].values)
+    adata = ann.AnnData(X=fcsdata.data[:].values)
     adata.var_names = fcsdata.channel_names
     adata.uns['meta'] = fcsdata.meta
 
@@ -91,7 +91,7 @@ def __tofcs(filenameh5ad, anndatafile, save):
                   '$BEGINDATA', '$ENDDATA', '$BYTEORD', '$DATATYPE',
                   '$MODE', '$NEXTDATA', '$TOT', '$PAR', '$fcswrite version']
 
-    adata = anndata.read_h5ad(anndatafile)
+    adata = ann.read_h5ad(anndatafile)
     dictionary = adata.uns['meta']
     ch_shortnames = dictionary['_channels_'][:, 0]
 
