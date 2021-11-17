@@ -129,11 +129,12 @@ def split_area(adata, option='area'):
     #create new anndata object
     adataN = anndata.AnnData(X = adata.X[:, np.flatnonzero(index)], 
                                 obs = adata.obs, 
-                                vidx = adata.var_names[index].values, 
+                            
                                 uns = adata.uns)
+    adataN.var_names = adata.var_names[index].values 
     return adataN
 
-# TO DO: adapt index choice
+# TODO: adapt index choice and move function to plotting module
 # Plot data. Choose between Area, Height both(default)
 def plotdata(adata, option=''):
     """
