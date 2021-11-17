@@ -5,4 +5,6 @@ except ImportError:  # for Python<3.8
 
 __version__ = metadata.version('pytometry')
 
-from . import converter, clustering, preprocessing
+from . import converter as io
+from . import clustering as cl
+from . import preprocessing as pp
