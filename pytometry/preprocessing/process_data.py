@@ -33,7 +33,7 @@ def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
     channel_data = fcsdata.meta['_channels_']
 
     if '$PnS' in channel_data:
-        channel_renames = [str(channel_data['$PnS'][channel_data['$PnN'] == name].values[0]) for name in channel_names]
+        channel_renames = [str(channel_data['$PnS'][channel_data['$PnN'] == name][0]) for name in channel_names]
     else:
         channel_renames = channel_names
 
@@ -63,13 +63,13 @@ def find_indexes(data, option=''):
     """
     Finds channels of interest for computing bleedthrough.
     :param data: Data matrix
-    :param option: Switch for filtering area and hight data.
+    :param option: Switch for filtering area and height data.
     :return: Array of indexes.
     """
     index = data.var.index
     index_array = []
     index_area = []
-    index_hight = []
+    index_height = []
 
     for item in index:
         if 'SC-H' not in item \
@@ -80,17 +80,17 @@ def find_indexes(data, option=''):
             if item[(len(item) - 2):len(item)] == '-A':
                 index_area.append(index.get_loc(item))
             elif item[(len(item) - 2):len(item)] == '-H':
-                index_hight.append(index.get_loc(item))
+                index_height.append(index.get_loc(item))
 
     if option == 'area':
         return index_area
-    elif option == 'hight':
-        return index_hight
+    elif option == 'height':
+        return index_height
     else:
         return index_array
 
 
-def compute_bleedthr(adata):
+def compute_bleedthr(adata, option='area'):
     """
     Computes bleedthrough for data channels.
     :param adata: AnnData object to be processed
@@ -102,8 +102,9 @@ def compute_bleedthr(adata):
         adata.layers['original'] = adata.X
 
     # Ignore channels 'FSC-H', 'FSC-A', 'SSC-H', 'SSC-A', 'FSC-Width', 'Time'
-    indexes = find_indexes(adata)
-    bleedthrough = np.dot(adata.X[:, indexes], compens)
+    indexes = find_indexes(adata, option = option)
+    bleedthrough = np.dot(adata.X[:, indexes], 
+                          compens.iloc[indexes, indexes])
     adata.X[:, indexes] = bleedthrough
     return adata
 
@@ -112,36 +113,42 @@ def split_area(adata, option='area'):
     """
     Methode to filter out height or area data.
     :param adata: AnnData object containing data.
-    :param option: Switch for choosing 'area' or 'hight'.
-    :return: AnnData object containing area or hight data
+    :param option: Switch for choosing 'area' or 'height'.
+    :return: AnnData object containing area or height data
     """
     if option == 'area':
         index = find_indexes(adata, 'area')
-        adata = anndata.AnnData(adata.X[:, index], adata.obs, adata.var_names[index], adata.uns)
+        adata = anndata.AnnData(adata.X[:, index], 
+                                adata.obs, 
+                                adata.var_names[index], 
+                                adata.uns)
         return adata
 
     elif option == 'height':
         index = find_indexes(adata, 'height')
-        adata = anndata.AnnData(adata.X[:, index], adata.obs, adata.var_names[index], adata.uns)
+        adata = anndata.AnnData(adata.X[:, index], 
+                                adata.obs, 
+                                adata.var_names[index], 
+                                adata.uns)
         return adata
     else:
-        print('Wrong option. Only \'area\' and \'hight\' are allowed!')
+        print('Wrong option. Only \'area\' and \'height\' are allowed!')
         return adata
 
 
-# Plot data. Choose between Area, Hight both(default)
+# Plot data. Choose between Area, Height both(default)
 def plotdata(adata, option=''):
     """
     Creating scatterplot from Anndata object.
     :param adata: AnnData object containing data.
-    :param option: Switch to choose directly between area and hight data.
+    :param option: Switch to choose directly between area and height data.
     """
     if option == 'area':
         index = find_indexes(adata, option='area')
         datax = adata.X[:, index]
 
-    elif option == 'hight':
-        index = find_indexes(adata, option='hight')
+    elif option == 'height':
+        index = find_indexes(adata, option='height')
         datax = adata.X[:, index]
     else:
         index = find_indexes(adata, option='')
