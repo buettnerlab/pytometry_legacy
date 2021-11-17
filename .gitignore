@@ -15,3 +15,9 @@ pytometry/HSNE/test/.ipynb_checkpoints/NewTechniqueSearchNB-checkpoint.ipynb
 pytometry/gating/test/datasets/temp.fcs
 pytometry/HSNE/test/datasets/VBh_converted.h5ad
 pytometry/gating/test/datasets/VBh_converted.h5ad
+.DS_Store
+
+pytometry.egg-info/
+pytometry/.DS_Store
+pytometry/Tutorials/.ipynb_checkpoints/
+pytometry/Tutorials/sinfo-requirements.txt
