@@ -59,38 +59,28 @@ def create_comp_mat(spillmat, relevant_data=''):
     return compens
 
 
-def find_indexes(data, option=''):
+def find_indexes(adata):
     """
     Finds channels of interest for computing bleedthrough.
-    :param data: Data matrix
-    :param option: Switch for filtering area and height data.
+    :param adata: anndata object
     :return: Array of indexes.
     """
-    index = data.var.index
+    index = adata.var.index
     index_array = []
-    index_area = []
-    index_height = []
 
     for item in index:
-        if 'SC-H' not in item \
-                and 'SC-A' not in item \
-                and 'Width' not in item \
-                and 'Time' not in item:
-            index_array.append(index.get_loc(item))
-            if item[(len(item) - 2):len(item)] == '-A':
-                index_area.append(index.get_loc(item))
-            elif item[(len(item) - 2):len(item)] == '-H':
-                index_height.append(index.get_loc(item))
+        if item.endswith('-A') and not item.count('SC-'):
+            index_array.append('area')
+        elif item.endswith('-H') and not item.count('SC-'):
+            index_array.append('height')
+        else:
+            index_array.append('other')
 
-    if option == 'area':
-        return index_area
-    elif option == 'height':
-        return index_height
-    else:
-        return index_array
+    adata.var['signal_type'] = pd.Categorical(index_array)
+    return adata
 
 
-def compute_bleedthr(adata, option='area'):
+def compute_bleedthr(adata):
     """
     Computes bleedthrough for data channels.
     :param adata: AnnData object to be processed
@@ -102,9 +92,13 @@ def compute_bleedthr(adata, option='area'):
         adata.layers['original'] = adata.X
 
     # Ignore channels 'FSC-H', 'FSC-A', 'SSC-H', 'SSC-A', 'FSC-Width', 'Time'
-    indexes = find_indexes(adata, option = option)
+    if 'signal_type' not in adata.var_keys():
+        adata = find_indexes(adata)
+    #select non other indices
+    indexes = np.invert(adata.var['signal_type'] == 'other')
+    
     bleedthrough = np.dot(adata.X[:, indexes], 
-                          compens.iloc[indexes, indexes])
+                          compens)
     adata.X[:, indexes] = bleedthrough
     return adata
 
@@ -116,26 +110,30 @@ def split_area(adata, option='area'):
     :param option: Switch for choosing 'area' or 'height'.
     :return: AnnData object containing area or height data
     """
-    if option == 'area':
-        index = find_indexes(adata, 'area')
-        adata = anndata.AnnData(adata.X[:, index], 
-                                adata.obs, 
-                                adata.var_names[index], 
-                                adata.uns)
-        return adata
 
-    elif option == 'height':
-        index = find_indexes(adata, 'height')
-        adata = anndata.AnnData(adata.X[:, index], 
-                                adata.obs, 
-                                adata.var_names[index], 
-                                adata.uns)
+    option_key = option
+    if option_key not in ['area', 'height', 'other']:
+        print(f"{option_key} is not a valid category. Return all.")
         return adata
-    else:
-        print('Wrong option. Only \'area\' and \'height\' are allowed!')
-        return adata
+    #Check if indices for area and height have been computed
+    if 'signal_type' not in adata.var_keys():
+        adata = find_indexes(adata)
+    
+    index = adata.var['signal_type']==option_key
+    non_idx = np.flatnonzero(np.invert(index))
+    #merge non-idx entries in data matrix with obs
+    non_cols = adata.var_names[non_idx].values
+    for idx, colname in enumerate(non_cols):
+        adata.obs[colname] = adata.X[:,non_idx[idx]].copy()
+    
+    #create new anndata object
+    adataN = anndata.AnnData(X = adata.X[:, np.flatnonzero(index)], 
+                                obs = adata.obs, 
+                                vidx = adata.var_names[index].values, 
+                                uns = adata.uns)
+    return adataN
 
-
+# TO DO: adapt index choice
 # Plot data. Choose between Area, Height both(default)
 def plotdata(adata, option=''):
     """
