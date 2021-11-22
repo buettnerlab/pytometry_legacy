@@ -1,9 +1,9 @@
 from typing import Dict, Any
-import skfuzzy as fuzz
+
 import numpy as np
 import scanpy as sc
 import anndata as ann
-from minisom import MiniSom
+
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import pandas as pd
@@ -55,6 +55,13 @@ class Cluster:
         :param centers: Number of centers for clustering.
         :return: Runtime of this algorithm.
         """
+        try:
+            import skfuzzy as fuzz
+        except ImportError: 
+            raise ImportError(
+            'Please install the skfuzzy algorithm: \
+                `pip3 install scikit-fuzzy`.'
+        )
         if not centers:
             centers = self.__centers
 
@@ -97,6 +104,15 @@ class Cluster:
         :param resolution: Resolution used for the Leiden clustering.
         :return: Runtime of this algorithm.
         """
+        try:
+            import leidenalg
+        except ImportError:
+            raise ImportError(
+                'Please install the leiden algorithm: \
+                    `conda install -c conda-forge leidenalg` \
+                        or `pip3 install leidenalg`.'
+        )
+                
         if data is not None:
             adata = ann.AnnData(X=data)
 
@@ -134,6 +150,14 @@ class Cluster:
                     - Centers for the resulting clustering,
                     - Runtime
         """
+        try:
+            from minisom import MiniSom
+        except ImportError:
+            raise ImportError(
+                'Please install the minisom algorithm: \
+                     `pip3 install minisom`.'
+        )
+        
         if not ncenter:
             ncenter = self.__centers
 
@@ -286,6 +310,13 @@ class Cluster:
         :param nrefs: Number of reference dispertions to be processed.
         :return: Calculated gap score.
         """
+        try:
+            import skfuzzy as fuzz
+        except ImportError: 
+            raise ImportError(
+            'Please install the skfuzzy algorithm: \
+                `pip3 install scikit-fuzzy`.'
+        )
         # Holder for reference dispersion results
         ref_disps = np.zeros(nrefs)
 
