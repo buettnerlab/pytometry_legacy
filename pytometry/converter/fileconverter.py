@@ -10,8 +10,7 @@ Fileconverter for .fcs -> .h5ad and .h5ad -> .fcs
 import getpass
 import os.path
 from pathlib import Path
-from tkinter import *
-from tkinter import filedialog
+
 import FlowCytometryTools as fct
 import anndata as ann
 import numpy as np
@@ -125,13 +124,17 @@ def readandconvert(datafile='',
     if datafile != '':
         file_names = [datafile]
     else:
+        from tkinter import Tk
+        from tkinter import filedialog
         username = getpass.getuser()  # current username
 
         file_dialog = Tk()
         file_dialog.withdraw()
 
-        file_names = filedialog.askopenfilenames(initialdir="/home/%s/" % username, title="Select file",
-                                                 filetypes=(("all files", "*.*"), ("fcs files", "*.fcs"),
+        file_names = filedialog.askopenfilenames(initialdir="/home/%s/" % username, 
+                                                 title="Select file",
+                                                 filetypes=(("all files", "*.*"), 
+                                                            ("fcs files", "*.fcs"),
                                                             ("h5ad files", ".h5ad")))
 
     for file_name in file_names:
@@ -140,7 +143,8 @@ def readandconvert(datafile='',
         filename, file_extension = os.path.splitext(file_path)
 
         if file_extension == '.fcs':
-            elementlist.append(__toanndata(filename, file_path, spillover_key,  save_flag))
+            elementlist.append(__toanndata(filename, file_path, 
+                                           spillover_key,  save_flag))
         elif file_extension == '.h5ad':
             elementlist.append(__tofcs(filename, file_path, save_flag))
         else:
