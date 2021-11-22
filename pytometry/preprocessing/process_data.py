@@ -141,7 +141,7 @@ def split_area(adata, key='signal_type', option='area'):
     adataN.var_names = adata.var_names[index].values 
     return adataN
 
-# TODO: adapt index choice and move function to plotting module
+# TODO: move function to plotting module
 # Plot data. Choose between Area, Height both(default)
 def plotdata(adata, 
              key = 'signal_type', 
@@ -152,7 +152,7 @@ def plotdata(adata,
              **kwargs
              ):
     """
-    Creating scatterplot from Anndata object.
+    Creating histogram plot from Anndata object.
     :param adata: AnnData object containing data.
     :param cofactor: float value to normalize with in arcsinh-transform
     :param option: Switch to choose directly between area and height data.
@@ -170,7 +170,7 @@ def plotdata(adata,
         adata = normalize_arcsinh(adata, cofactor)
     
     if option_key not in ['area', 'height', 'other']:
-        print(f"{option_key} is not a valid category. Return all.")
+        print(f"Option {option_key} is not a valid category. Return all.")
         datax = adata.X
         var_names = adata.var_names.values
     else:
@@ -179,11 +179,10 @@ def plotdata(adata,
         var_names = adata.var_names[index].values 
     
     if len(var_names)== 0:
-        print(f"{option_key} led to the selection of 0 variables.\
+        print(f"Option {option_key} led to the selection of 0 variables.\
                Nothing to plot.")
         return
-    
-    
+        
 
     rcParams['figure.figsize'] = (15, 6)
 
