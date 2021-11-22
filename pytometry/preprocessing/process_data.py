@@ -20,6 +20,8 @@ import FlowCytometryTools as fct
 import anndata as ann
 import math
 
+from ..tools import normalize_arcsinh
+
 
 def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
     """
@@ -59,11 +61,12 @@ def create_comp_mat(spillmat, relevant_data=''):
     return compens
 
 
-def find_indexes(adata):
+def find_indexes(adata, key_added = 'signal_type'):
     """
     Finds channels of interest for computing bleedthrough.
     :param adata: anndata object
-    :return: Array of indexes.
+    :param key_added: key, where result vector is added to the adata.var
+    :return: a categorical vector in adata.var[f'{key_added}'] 
     """
     index = adata.var.index
     index_array = []
@@ -80,22 +83,23 @@ def find_indexes(adata):
     return adata
 
 
-def compute_bleedthr(adata):
+def compute_bleedthr(adata, key = 'signal_type'):
     """
     Computes bleedthrough for data channels.
     :param adata: AnnData object to be processed
     :return: AnnData object with calculated bleedthrough.
     """
+    key_in = key
     compens = adata.uns['comp_mat']
     # save original data as layer
     if 'original' not in adata.layers:
         adata.layers['original'] = adata.X
 
     # Ignore channels 'FSC-H', 'FSC-A', 'SSC-H', 'SSC-A', 'FSC-Width', 'Time'
-    if 'signal_type' not in adata.var_keys():
+    if key_in not in adata.var_keys():
         adata = find_indexes(adata)
     #select non other indices
-    indexes = np.invert(adata.var['signal_type'] == 'other')
+    indexes = np.invert(adata.var[key_in] == 'other')
     
     bleedthrough = np.dot(adata.X[:, indexes], 
                           compens)
@@ -103,23 +107,26 @@ def compute_bleedthr(adata):
     return adata
 
 
-def split_area(adata, option='area'):
+def split_area(adata, key='signal_type', option='area'):
     """
     Methode to filter out height or area data.
     :param adata: AnnData object containing data.
+    :param key: key for adata.var where the variable type is stored
     :param option: Switch for choosing 'area' or 'height'.
     :return: AnnData object containing area or height data
     """
 
     option_key = option
+    key_in = key
+    
     if option_key not in ['area', 'height', 'other']:
         print(f"{option_key} is not a valid category. Return all.")
         return adata
     #Check if indices for area and height have been computed
-    if 'signal_type' not in adata.var_keys():
+    if key_in not in adata.var_keys():
         adata = find_indexes(adata)
     
-    index = adata.var['signal_type']==option_key
+    index = adata.var[key_in] == option_key
     non_idx = np.flatnonzero(np.invert(index))
     #merge non-idx entries in data matrix with obs
     non_cols = adata.var_names[non_idx].values
@@ -136,26 +143,51 @@ def split_area(adata, option='area'):
 
 # TODO: adapt index choice and move function to plotting module
 # Plot data. Choose between Area, Height both(default)
-def plotdata(adata, option=''):
+def plotdata(adata, 
+             key = 'signal_type', 
+             normalize = True,
+             cofactor = 10, 
+             option='',
+             save = '',
+             **kwargs
+             ):
     """
     Creating scatterplot from Anndata object.
     :param adata: AnnData object containing data.
+    :param cofactor: float value to normalize with in arcsinh-transform
     :param option: Switch to choose directly between area and height data.
+    :param save: Filename to save the shown figure 
+    :param kwargs: Passed to :func:`matplotlib.pyplot.savefig`
     """
-    if option == 'area':
-        index = find_indexes(adata, option='area')
-        datax = adata.X[:, index]
-
-    elif option == 'height':
-        index = find_indexes(adata, option='height')
-        datax = adata.X[:, index]
+    option_key = option
+    key_in = key
+    
+    #Check if indices for area and height have been computed
+    if key_in not in adata.var_keys():
+        adata = find_indexes(adata)
+    
+    if normalize:
+        adata = normalize_arcsinh(adata, cofactor)
+    
+    if option_key not in ['area', 'height', 'other']:
+        print(f"{option_key} is not a valid category. Return all.")
+        datax = adata.X
+        var_names = adata.var_names.values
     else:
-        index = find_indexes(adata, option='')
+        index = adata.var[key_in] == option_key
         datax = adata.X[:, index]
+        var_names = adata.var_names[index].values 
+    
+    if len(var_names)== 0:
+        print(f"{option_key} led to the selection of 0 variables.\
+               Nothing to plot.")
+        return
+    
+    
 
     rcParams['figure.figsize'] = (15, 6)
 
-    names = adata.var_names[index]
+    names = var_names
     number = len(names)
 
     columns = 3
@@ -164,12 +196,17 @@ def plotdata(adata, option=''):
     fig = plt.figure()
     fig.subplots_adjust(hspace=0.4, wspace=0.6)
 
-    for index in range(0, number, 1):
-        ax = fig.add_subplot(rows, columns, index + 1)
-        sb.distplot(np.arcsinh(datax[:, names == names[index]] / 10),
-                    kde=False, norm_hist=False, bins=400, ax=ax, axlabel=names[index])
-
+    for idx in range(number):
+        ax = fig.add_subplot(rows, columns, idx + 1)
+        sb.distplot(datax[:, names == names[idx]],
+                    kde=False, norm_hist=False, 
+                    bins=400, ax=ax, 
+                    axlabel=names[idx])
+    if save !='':
+        plt.savefig(save, bbox_inches = 'tight', **kwargs)
     plt.show()
+    
+    return
 
 
 def load_mult_files():
@@ -183,15 +220,18 @@ def load_mult_files():
     file_dialog.withdraw()
 
     elements = []
-    file_names = filedialog.askopenfilenames(initialdir="/home/%s/SampleData/" % username, title="Select file",
-                                             filetypes=(("all files", "*.*"), ("fcs files", "*.fcs"),
+    file_names = filedialog.askopenfilenames(initialdir="/home/%s/SampleData/" % username, 
+                                             title="Select file",
+                                             filetypes=(("all files", "*.*"), 
+                                                        ("fcs files", "*.fcs"),
                                                         ("h5ad files", ".h5ad")))
 
     for file_name in file_names:
         filename, file_extension = os.path.splitext(file_name)
 
         if file_extension == '.fcs':
-            elements.append(fct.FCMeasurement(ID='FCS-file', datafile=file_name))
+            elements.append(fct.FCMeasurement(ID='FCS-file', 
+                                              datafile=file_name))
         elif file_extension == '.h5ad':
             elements.append(ann.read_h5ad(file_name))
         else:
