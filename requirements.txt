@@ -1,0 +1,8 @@
+#required files
+numpy
+pandas
+scanpy
+anndata
+scikit-learn
+seaborn
+matplotlib
