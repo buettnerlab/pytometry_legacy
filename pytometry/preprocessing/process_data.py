@@ -14,13 +14,14 @@ import seaborn as sb
 from matplotlib import rcParams
 import getpass
 import os.path
-from tkinter import *
-from tkinter import filedialog
+
 import FlowCytometryTools as fct
 import anndata as ann
 import math
 
 from ..tools import normalize_arcsinh
+
+
 
 
 def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
@@ -208,32 +209,5 @@ def plotdata(adata,
     return
 
 
-def load_mult_files():
-    """
-    Methode for loading multiple files at once.
-    :return: A list of the loaded files.
-    """
-    username = getpass.getuser()  # current username
 
-    file_dialog = Tk()
-    file_dialog.withdraw()
 
-    elements = []
-    file_names = filedialog.askopenfilenames(initialdir="/home/%s/SampleData/" % username, 
-                                             title="Select file",
-                                             filetypes=(("all files", "*.*"), 
-                                                        ("fcs files", "*.fcs"),
-                                                        ("h5ad files", ".h5ad")))
-
-    for file_name in file_names:
-        filename, file_extension = os.path.splitext(file_name)
-
-        if file_extension == '.fcs':
-            elements.append(fct.FCMeasurement(ID='FCS-file', 
-                                              datafile=file_name))
-        elif file_extension == '.h5ad':
-            elements.append(ann.read_h5ad(file_name))
-        else:
-            print('File ' + file_name + ' can not be loaded!')
-
-    return elements
