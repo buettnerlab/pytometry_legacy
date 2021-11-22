@@ -6,7 +6,7 @@ import setuptools
 setuptools.setup(
     name="pytometry", # Replace with your own username
     version="0.0.1",
-    author="Felix Hempel, Thomas Ryborz, Maren Büttner",
+    author="Felix Hempel, Thomas Ryborz, Maren Buettner",
     author_email="maren.buettner@helmholtz-muenchen.de",
     description="Tools for Flow Cytometry Analysis using the Anndata-dataformat",
 #    long_description=long_description,
