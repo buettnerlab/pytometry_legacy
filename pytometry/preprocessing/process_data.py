@@ -169,6 +169,7 @@ def plotdata(adata,
              key = 'signal_type', 
              normalize = True,
              cofactor = 10, 
+             figsize = (15, 6),
              option='',
              save = '',
              **kwargs
@@ -206,7 +207,7 @@ def plotdata(adata,
         return
         
 
-    rcParams['figure.figsize'] = (15, 6)
+    rcParams['figure.figsize'] = figsize
 
     names = var_names
     number = len(names)
