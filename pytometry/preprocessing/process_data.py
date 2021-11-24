@@ -12,10 +12,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
 from matplotlib import rcParams
-import getpass
-import os.path
+#import getpass
+#import os.path
 
-import FlowCytometryTools as fct
+#import FlowCytometryTools as fct
 import anndata as ann
 import math
 
@@ -24,7 +24,8 @@ from ..tools import normalize_arcsinh
 
 
 
-def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
+def create_spillover_mat(fcsdata, 
+                         key = '$SPILLOVER'):
     """
     Creates a spillover matrix from meta data of an .fcs file
     :param fcsdata: Meta data from .fcs file
@@ -36,11 +37,14 @@ def create_spillover_mat(fcsdata, key = '$SPILLOVER'):
     channel_data = fcsdata.meta['_channels_']
 
     if '$PnS' in channel_data:
-        channel_renames = [str(channel_data['$PnS'][channel_data['$PnN'] == name][0]) for name in channel_names]
+        channel_renames = [str(channel_data['$PnS'][channel_data['$PnN'] == name][0]) 
+                           for name in channel_names]
     else:
         channel_renames = channel_names
 
-    spill_values = np.reshape([float(inp) for inp in spillover[(int(spillover[0]) + 1):]], [num_col, num_col])
+    spill_values = np.reshape([float(inp) 
+                               for inp in spillover[(int(spillover[0]) + 1):]], 
+                              [num_col, num_col])
     spill_df = pd.DataFrame(spill_values, columns=channel_renames)
     return spill_df
 
@@ -62,24 +66,36 @@ def create_comp_mat(spillmat, relevant_data=''):
     return compens
 
 
-def find_indexes(adata, key_added = 'signal_type'):
+def find_indexes(adata, key_added = 'signal_type', data_type='facs'):
     """
     Finds channels of interest for computing bleedthrough.
     :param adata: anndata object
-    :param key_added: key, where result vector is added to the adata.var
+    :param key_added: str, where result vector is added to the adata.var
+    :param data_type: str, either 'facs' or 'cytof' 
     :return: a categorical vector in adata.var[f'{key_added}'] 
     """
     index = adata.var.index
     index_array = []
+    
+    if data_type == 'facs':
 
-    for item in index:
-        if item.endswith('-A') and not item.count('SC-'):
-            index_array.append('area')
-        elif item.endswith('-H') and not item.count('SC-'):
-            index_array.append('height')
-        else:
-            index_array.append('other')
-
+        for item in index:
+            if item.endswith('-A') and not item.count('SC-'):
+                index_array.append('area')
+            elif item.endswith('-H') and not item.count('SC-'):
+                index_array.append('height')
+            else:
+                index_array.append('other')
+                
+    elif data_type in ['cytof', 'cyTOF']:
+        for item in index:
+            if item.endswith('Di'):
+                index_array.append('element')
+            else:
+                index_array.append('other')
+    else:
+        print(f"{data_type} not recognized. Must be either 'facs' or \
+               'cytof'/'cyTOF'")
     adata.var['signal_type'] = pd.Categorical(index_array)
     return adata
 
@@ -98,7 +114,7 @@ def compute_bleedthr(adata, key = 'signal_type'):
 
     # Ignore channels 'FSC-H', 'FSC-A', 'SSC-H', 'SSC-A', 'FSC-Width', 'Time'
     if key_in not in adata.var_keys():
-        adata = find_indexes(adata)
+        adata = find_indexes(adata, data_type='facs')
     #select non other indices
     indexes = np.invert(adata.var[key_in] == 'other')
     
@@ -108,24 +124,29 @@ def compute_bleedthr(adata, key = 'signal_type'):
     return adata
 
 
-def split_area(adata, key='signal_type', option='area'):
+def split_area(adata, key='signal_type', option='area', data_type='facs'):
     """
     Methode to filter out height or area data.
     :param adata: AnnData object containing data.
     :param key: key for adata.var where the variable type is stored
-    :param option: Switch for choosing 'area' or 'height'.
+    :param option: str, for choosing 'area' or 'height' in case of FACS data
+                   and 'element' for cyTOF data.
+    :param data_type: str, either 'facs' or 'cytof'/'cyTOF'
     :return: AnnData object containing area or height data
     """
 
     option_key = option
     key_in = key
     
-    if option_key not in ['area', 'height', 'other']:
+    possible_options = ['area', 'height', 'other', 'element']
+  
+    
+    if option_key not in possible_options:
         print(f"{option_key} is not a valid category. Return all.")
         return adata
     #Check if indices for area and height have been computed
     if key_in not in adata.var_keys():
-        adata = find_indexes(adata)
+        adata = find_indexes(adata, data_type = data_type)
     
     index = adata.var[key_in] == option_key
     non_idx = np.flatnonzero(np.invert(index))
