@@ -256,7 +256,7 @@ def normalize_biExp(adata,
                     negative = 0, 
                     width=-10, 
                     positive = 4.418540,
-                    max_value = 262144
+                    max_value = 262144.000029
                     ):
     """
     Biex transform as implemented in FlowJo 10. Adapted from FlowKit Python package.
