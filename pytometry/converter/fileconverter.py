@@ -142,10 +142,10 @@ def readandconvert(datafile='',
         file_path = file_name
         filename, file_extension = os.path.splitext(file_path)
 
-        if file_extension == '.fcs':
+        if file_extension in ['.fcs', '.FCS']:
             elementlist.append(__toanndata(filename, file_path, 
                                            spillover_key,  save_flag))
-        elif file_extension == '.h5ad':
+        elif file_extension in ['.h5ad', '.H5AD']:
             elementlist.append(__tofcs(filename, file_path, save_flag))
         else:
             print('File ' + file_name + ' can not be converted!')
