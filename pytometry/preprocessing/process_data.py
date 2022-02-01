@@ -184,22 +184,23 @@ def plotdata(adata,
     """
     option_key = option
     key_in = key
+    adata_ = adata.copy()
     
     #Check if indices for area and height have been computed
-    if key_in not in adata.var_keys():
-        adata = find_indexes(adata)
+    if key_in not in adata_.var_keys():
+        adata_ = find_indexes(adata_)
     
     if normalize:
-        adata = normalize_arcsinh(adata, cofactor)
+        adata_ = normalize_arcsinh(adata_, cofactor)
     
     if option_key not in ['area', 'height', 'other']:
         print(f"Option {option_key} is not a valid category. Return all.")
-        datax = adata.X
-        var_names = adata.var_names.values
+        datax = adata_.X
+        var_names = adata_.var_names.values
     else:
-        index = adata.var[key_in] == option_key
-        datax = adata.X[:, index]
-        var_names = adata.var_names[index].values 
+        index = adata_.var[key_in] == option_key
+        datax = adata_.X[:, index]
+        var_names = adata_.var_names[index].values 
     
     if len(var_names)== 0:
         print(f"Option {option_key} led to the selection of 0 variables.\
