@@ -89,7 +89,7 @@ def find_indexes(adata, key_added = 'signal_type', data_type='facs'):
                 
     elif data_type in ['cytof', 'cyTOF']:
         for item in index:
-            if item.endswith('Di'):
+            if item.endswith('Di') or item.endswith('Dd'):
                 index_array.append('element')
             else:
                 index_array.append('other')
