@@ -158,7 +158,7 @@ def split_area(adata, key='signal_type', option='area', data_type='facs'):
     #create new anndata object (note: removes potential objects like obsm)
     adataN = ann.AnnData(X = adata.X[:, np.flatnonzero(index)], 
                          obs = adata.obs, 
-                         var = adata.var.loc[np.flatnonzero(index)],      
+                         var = adata.var.iloc[np.flatnonzero(index)],      
                          uns = adata.uns)
     adataN.var_names = adata.var_names[index].values 
     return adataN
