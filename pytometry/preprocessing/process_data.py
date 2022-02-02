@@ -149,7 +149,13 @@ def split_area(adata, key='signal_type', option='area', data_type='facs'):
         adata = find_indexes(adata, data_type = data_type)
     
     index = adata.var[key_in] == option_key
+    #if none of the indices is true, abort
+    if sum(index)<1:
+        print(f"{option_key} is not in adata.var[{key_in}]. Return all.")
+        return adata
+    
     non_idx = np.flatnonzero(np.invert(index))
+
     #merge non-idx entries in data matrix with obs
     non_cols = adata.var_names[non_idx].values
     for idx, colname in enumerate(non_cols):
