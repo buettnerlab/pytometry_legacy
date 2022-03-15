@@ -318,7 +318,7 @@ def normalize_biExp(adata,
         adata.X = lut_func(adata.X)
         
     elif len_param == adata.n_vars:
-        for idx, marker in enumerate(adata_tmp.var_names):
+        for idx, marker in enumerate(adata.var_names):
             #get correct row
             row_idx = negative.index == marker
             
