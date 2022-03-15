@@ -322,10 +322,10 @@ def normalize_biExp(adata,
             #get correct row
             row_idx = negative.index == marker
             
-            negative_tmp = negative[row_idx]
-            width_tmp = width[row_idx]
-            positive_tmp = positive[row_idx]
-            max_value_tmp = max_value[row_idx]
+            negative_tmp = negative[row_idx][0]
+            width_tmp = width[row_idx][0]
+            positive_tmp = positive[row_idx][0]
+            max_value_tmp = max_value[row_idx][0]
             
             x, y = generate_biex_lut(neg = negative_tmp,
                                  width_basis = width_tmp, 
