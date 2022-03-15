@@ -290,28 +290,61 @@ def normalize_biExp(adata,
     only if you use data that displays data with a data range greater than 5 decades.
     
     :param adata: anndata object representing the FCS data
-    :param negative: Value for the FlowJo biex option 'negative' (float)
-    :param width: Value for the FlowJo biex option 'width' (float)
-    :param positive: Value for the FlowJo biex option 'positive' (float)
-    :param max_value: parameter for the top of the linear scale (default=262144)
+    :param negative: Value for the FlowJo biex option 'negative' (float) or pd.Series
+    :param width: Value for the FlowJo biex option 'width' (float) or pd.Series
+    :param positive: Value for the FlowJo biex option 'positive' (float) or pd.Series
+    :param max_value: parameter for the top of the linear scale (default=262144) or pd.Series
     
     """
     
-    x, y = generate_biex_lut(neg = negative,
+    len_param = (len(negative) + len(width) + len(positive) + len(max_value))/4
+        
+    #transform every variable the same:
+    if len_param == 1:
+
+        x, y = generate_biex_lut(neg = negative,
                              width_basis = width, 
                              pos = positive, 
                              max_value = max_value)
     
-    #lut_func to apply for transformation
-    lut_func = interpolate.interp1d(x, y, 
+        #lut_func to apply for transformation
+        lut_func = interpolate.interp1d(x, y, 
                          kind='linear', 
                          bounds_error=False, 
                          fill_value=(np.min(y), 
                                      np.max(y)))
     
-    #transform adata values using the biexponential function
-    adata.X = lut_func(adata.X)
-    
+        #transform adata values using the biexponential function
+        adata.X = lut_func(adata.X)
+        
+    elif len_param == adata.n_vars:
+        for idx, marker in enumerate(adata.var_names):
+            #get correct row
+            row_idx = negative.index == marker
+            
+            negative_tmp = negative[row_idx][0]
+            width_tmp = width[row_idx][0]
+            positive_tmp = positive[row_idx][0]
+            max_value_tmp = max_value[row_idx][0]
+            
+            x, y = generate_biex_lut(neg = negative_tmp,
+                                 width_basis = width_tmp, 
+                                 pos = positive_tmp, 
+                                 max_value = max_value_tmp)
+        
+            #lut_func to apply for transformation
+            lut_func = interpolate.interp1d(x, y, 
+                             kind='linear', 
+                             bounds_error=False, 
+                             fill_value=(np.min(y), 
+                                         np.max(y)))
+            
+            #transform adata values using the biexponential function
+            adata.X[:,idx] = lut_func(adata.X[:, idx])
+    else:
+        print(f"One of the parameters has the incorrect length.\
+               Return adata without normalising.")
+            
     return adata
 
 def generate_biex_lut(channel_range=4096, 
