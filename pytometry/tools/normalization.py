@@ -296,8 +296,15 @@ def normalize_biExp(adata,
     :param max_value: parameter for the top of the linear scale (default=262144) or pd.Series
     
     """
-    
-    len_param = (len(negative) + len(width) + len(positive) + len(max_value))/4
+    #check inputs
+    inputs = [negative, width, positive, max_value]
+    len_param = 0
+    for N in inputs:
+        if hasattr(N, '__len__') and (not isinstance(N, str)):
+            len_param += len(N)/4
+        else: #integer values do not have len attribute
+            len_param += 0.25
+
         
     #transform every variable the same:
     if len_param == 1:
@@ -342,7 +349,7 @@ def normalize_biExp(adata,
             #transform adata values using the biexponential function
             adata.X[:,idx] = lut_func(adata.X[:, idx])
     else:
-        print(f"One of the parameters has the incorrect length.\
+        print("One of the parameters has the incorrect length.\
                Return adata without normalising.")
             
     return adata
