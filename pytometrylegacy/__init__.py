@@ -3,7 +3,7 @@ try:
 except ImportError:  # for Python<3.8
     import importlib_metadata as metadata
 
-__version__ = metadata.version('pytometry_legacy')
+__version__ = metadata.version('pytometrylegacy')
 
 from . import converter as io
 from . import clustering as cl

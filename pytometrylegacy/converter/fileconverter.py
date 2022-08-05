@@ -16,8 +16,8 @@ import anndata as ann
 import numpy as np
 import pandas as pd
 
-from pytometry.preprocessing import process_data as proc
-from pytometry.converter import fcswriter
+from pytometrylegacy.preprocessing import process_data as proc
+from pytometrylegacy.converter import fcswriter
 
 
 
