@@ -8,14 +8,14 @@ with open("requirements.txt", "r") as f:
 
 
 setuptools.setup(
-    name="pytometry", # Replace with your own username
+    name="pytometry-legacy", # Replace with your own username
     version="0.0.1",
     author="Felix Hempel, Thomas Ryborz, Maren Buettner",
     author_email="maren.buettner@helmholtz-muenchen.de",
     description="Tools for Flow Cytometry Analysis using the Anndata-dataformat",
 #    long_description=long_description,
 #    long_description_content_type="text/markdown",
-    url="https://github.com/theislab/pytometry",
+    url="https://github.com/buettnerlab/pytometry-legacy",
     packages = setuptools.find_packages(),
     install_requires = requirements,
     classifiers=[
