@@ -15,7 +15,7 @@ setuptools.setup(
     description="Tools for Flow Cytometry Analysis using the Anndata-dataformat",
 #    long_description=long_description,
 #    long_description_content_type="text/markdown",
-    url="https://github.com/buettnerlab/pytometry-legacy",
+    url="https://github.com/buettnerlab/pytometry_legacy",
     packages = setuptools.find_packages(),
     install_requires = requirements,
     classifiers=[
