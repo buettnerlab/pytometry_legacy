@@ -8,7 +8,7 @@ with open("requirements.txt", "r") as f:
 
 
 setuptools.setup(
-    name="pytometry_legacy", # Replace with your own username
+    name="pytometrylegacy", # Replace with your own username
     version="0.0.1",
     author="Felix Hempel, Thomas Ryborz, Maren Buettner",
     author_email="maren.buettner@helmholtz-muenchen.de",
